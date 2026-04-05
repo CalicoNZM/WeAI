@@ -174,13 +174,28 @@
             font-size: 0.7rem;
         }
         .preset-btn:hover { border-color: var(--accent-1); }
+
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        
+        #autocomplete-results {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .autofill-item {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+        }
+        .autofill-item:hover { background-color: var(--accent-1); color: var(--accent-1-text); }
+        .autofill-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="flex flex-col">
 
     <header class="neo-box mx-2 mt-2 md:mx-4 md:mt-4 p-2 md:p-3 flex flex-row justify-between items-center bg-[var(--bg-color)] border-[var(--border-color)] shrink-0 z-20">
         <div class="flex items-center gap-3">
-            <i data-lucide="cpu" class="w-6 h-6 md:w-8 md:h-8 text-[var(--accent-1)]"></i>
             <div>
                 <h1 class="text-2xl md:text-3xl archivo-black text-gradient leading-none tracking-tighter">WeAI</h1>
                 <p class="text-[var(--text-muted)] text-[9px] md:text-[10px] uppercase tracking-widest font-bold" id="header-location">Global Dashboard</p>
@@ -203,19 +218,16 @@
             <div class="widget-header">
                 <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="terminal" class="w-4 h-4 text-[var(--accent-1)]"></i> Control Center</h2>
                 <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('controls')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('controls', false)"></i>
                 </div>
             </div>
             <div class="widget-body flex flex-col gap-3 justify-center">
-                <div>
-                    <label class="text-[10px] text-[var(--text-muted)] uppercase font-bold mb-1 block">Preset Location</label>
-                    <select class="neo-input" id="org-preset" onchange="applyPresetOrg()">
-                        <option value="-1.2921,36.8219">Nairobi, Kenya</option>
-                        <option value="64.1466,-21.9426">Reykjavik, Iceland</option>
-                        <option value="-3.1190,-60.0217">Manaus, Brazil</option>
-                        <option value="25.2048,55.2708">Dubai, UAE</option>
-                    </select>
+                <div class="relative">
+                    <label class="text-[10px] text-[var(--text-muted)] uppercase font-bold mb-1 block">Search Location</label>
+                    <input type="text" class="neo-input" id="location-input" placeholder="Type city or area..." autocomplete="off">
+                    <div id="autocomplete-results" class="absolute w-full bg-[var(--card-bg)] border-[var(--border-color)] border-2 border-t-0 hidden z-50 shadow-[4px_4px_0_0_var(--shadow-color)]"></div>
                 </div>
                 <div>
                     <label class="text-[10px] text-[var(--text-muted)] uppercase font-bold mb-1 block">Crop / Focus</label>
@@ -236,6 +248,7 @@
             <div class="widget-header">
                 <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-[var(--accent-2)]"></i> Live Metrics</h2>
                 <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('metrics')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('metrics', false)"></i>
                 </div>
@@ -272,6 +285,7 @@
                 <div class="flex items-center gap-2">
                     <button onclick="toggleMapLayer('precip')" id="btn-precip" class="bg-[var(--accent-2)] text-[var(--accent-2-text)] text-[9px] font-bold px-1.5 py-0.5 border-2 border-[var(--border-color)]">RADAR</button>
                     <button onclick="toggleMapLayer('wind')" id="btn-wind" class="bg-[var(--card-bg)] text-[var(--text-main)] text-[9px] font-bold px-1.5 py-0.5 border-2 border-[var(--border-color)]">WIND</button>
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)] ml-1" onclick="showInfo('map')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle ml-1"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('map', false)"></i>
                 </div>
@@ -285,6 +299,7 @@
             <div class="widget-header">
                 <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[var(--accent-2)]"></i> Meteogram Chart</h2>
                 <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('meteogram')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('meteogram', false)"></i>
                 </div>
@@ -301,6 +316,7 @@
             <div class="widget-header">
                 <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4 text-[var(--accent-warn)]"></i> Logistics Engine</h2>
                 <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('logistics')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('logistics', false)"></i>
                 </div>
@@ -331,6 +347,7 @@
             <div class="widget-header">
                 <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="sprout" class="w-4 h-4 text-[var(--accent-1)]"></i> Agro-Logic</h2>
                 <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('agro')"></i>
                     <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
                     <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('agro', false)"></i>
                 </div>
@@ -403,50 +420,64 @@
         </div>
     </div>
 
+    <div id="info-modal" class="fixed inset-0 z-[110] hidden flex justify-center items-center p-4 modal-overlay">
+        <div class="neo-box max-w-sm w-full bg-[var(--bg-color)] p-4 md:p-6 border-[var(--accent-2)] shadow-[8px_8px_0_0_var(--shadow-color)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg archivo-black text-[var(--accent-2)] flex items-center gap-2"><i data-lucide="info"></i> <span id="info-title">Widget Info</span></h2>
+                <button onclick="closeInfo()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]"><i data-lucide="x"></i></button>
+            </div>
+            <p id="info-text" class="text-sm text-[var(--text-main)] leading-relaxed"></p>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeInfo()" class="neo-btn px-4 py-2 text-xs bg-[var(--accent-2)] text-[var(--accent-2-text)] border-[var(--accent-2)]">Understood</button>
+            </div>
+        </div>
+    </div>
+
     <div id="theme-modal" class="fixed inset-0 z-[100] hidden flex justify-center items-center p-4 modal-overlay overflow-y-auto">
-        <div class="neo-box max-w-4xl w-full bg-[var(--bg-color)] flex flex-col md:flex-row border-[var(--border-color)] shadow-[8px_8px_0_0_var(--shadow-color)] my-4">
+        <div class="neo-box max-w-2xl w-full bg-[var(--bg-color)] flex flex-col border-[var(--border-color)] shadow-[8px_8px_0_0_var(--shadow-color)] my-4">
             
-            <div class="p-4 md:w-2/3 flex flex-col gap-4 border-b md:border-b-0 md:border-r-3 border-[var(--border-color)]">
+            <div class="p-4 flex flex-col gap-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl archivo-black text-[var(--text-main)]">Theme Engine</h2>
                     <button onclick="toggleThemeModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <h3 class="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-2">Dark Themes</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('dark_midnight')">
-                                <div class="w-2 h-2 rounded-full bg-[#4ade80]"></div><div class="w-2 h-2 rounded-full bg-[#818cf8]"></div> Midnight
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('dark_cyberpunk')">
-                                <div class="w-2 h-2 rounded-full bg-[#f472b6]"></div><div class="w-2 h-2 rounded-full bg-[#22d3ee]"></div> Cyberpunk
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('dark_solar')">
-                                <div class="w-2 h-2 rounded-full bg-[#fb923c]"></div><div class="w-2 h-2 rounded-full bg-[#facc15]"></div> Solar
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('dark_toxic')">
-                                <div class="w-2 h-2 rounded-full bg-[#a3e635]"></div><div class="w-2 h-2 rounded-full bg-[#c084fc]"></div> Toxic
-                            </button>
+                <div class="flex flex-col gap-3">
+                    <details class="border-2 border-[var(--border-color)] group" open>
+                        <summary class="p-3 bg-[var(--card-bg)] font-bold text-xs uppercase cursor-pointer flex justify-between items-center text-[var(--text-main)] hover:text-[var(--accent-1)] transition-colors">
+                            Dark Themes <i data-lucide="chevron-down" class="w-4 h-4 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-3 grid grid-cols-2 md:grid-cols-5 gap-2 bg-[var(--bg-color)]">
+                            <button class="preset-btn" onclick="applyPresetKey('dark_midnight')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#4ade80]"></div><div class="w-2 h-2 rounded-full bg-[#818cf8]"></div></div> Midnight</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_cyberpunk')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#f472b6]"></div><div class="w-2 h-2 rounded-full bg-[#22d3ee]"></div></div> Cyberpunk</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_solar')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#fb923c]"></div><div class="w-2 h-2 rounded-full bg-[#facc15]"></div></div> Solar</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_toxic')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#a3e635]"></div><div class="w-2 h-2 rounded-full bg-[#c084fc]"></div></div> Toxic</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_matrix')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#22c55e]"></div><div class="w-2 h-2 rounded-full bg-[#16a34a]"></div></div> Matrix</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_nebula')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#d946ef]"></div><div class="w-2 h-2 rounded-full bg-[#8b5cf6]"></div></div> Nebula</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_synth')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#e879f9]"></div><div class="w-2 h-2 rounded-full bg-[#2dd4bf]"></div></div> Synthwave</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_ocean')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0ea5e9]"></div><div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div></div> Deep Ocean</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_blood')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#ef4444]"></div><div class="w-2 h-2 rounded-full bg-[#dc2626]"></div></div> Blood Moon</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_charcoal')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#94a3b8]"></div><div class="w-2 h-2 rounded-full bg-[#64748b]"></div></div> Charcoal</button>
                         </div>
-                    </div>
-                    <div>
-                        <h3 class="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-2">Light Themes</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('light_clean')">
-                                <div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div><div class="w-2 h-2 rounded-full bg-[#10b981]"></div> Clean Slate
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('light_paper')">
-                                <div class="w-2 h-2 rounded-full bg-[#cb4b16]"></div><div class="w-2 h-2 rounded-full bg-[#2aa198]"></div> Paper
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('light_corp')">
-                                <div class="w-2 h-2 rounded-full bg-[#1d4ed8]"></div><div class="w-2 h-2 rounded-full bg-[#475569]"></div> Corporate
-                            </button>
-                            <button class="preset-btn flex items-center justify-center gap-1" onclick="applyPresetKey('light_rose')">
-                                <div class="w-2 h-2 rounded-full bg-[#e11d48]"></div><div class="w-2 h-2 rounded-full bg-[#f43f5e]"></div> Rose
-                            </button>
+                    </details>
+
+                    <details class="border-2 border-[var(--border-color)] group">
+                        <summary class="p-3 bg-[var(--card-bg)] font-bold text-xs uppercase cursor-pointer flex justify-between items-center text-[var(--text-main)] hover:text-[var(--accent-1)] transition-colors">
+                            Light Themes <i data-lucide="chevron-down" class="w-4 h-4 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-3 grid grid-cols-2 md:grid-cols-5 gap-2 bg-[var(--bg-color)]">
+                            <button class="preset-btn" onclick="applyPresetKey('light_clean')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div><div class="w-2 h-2 rounded-full bg-[#10b981]"></div></div> Clean Slate</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_paper')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#cb4b16]"></div><div class="w-2 h-2 rounded-full bg-[#2aa198]"></div></div> Paper</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_corp')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#1d4ed8]"></div><div class="w-2 h-2 rounded-full bg-[#475569]"></div></div> Corporate</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_rose')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#e11d48]"></div><div class="w-2 h-2 rounded-full bg-[#f43f5e]"></div></div> Rose</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_mint')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#14b8a6]"></div><div class="w-2 h-2 rounded-full bg-[#84cc16]"></div></div> Mint</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_lavender')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#8b5cf6]"></div><div class="w-2 h-2 rounded-full bg-[#d946ef]"></div></div> Lavender</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_citrus')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#f59e0b]"></div><div class="w-2 h-2 rounded-full bg-[#f97316]"></div></div> Citrus</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_sand')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#b45309]"></div><div class="w-2 h-2 rounded-full bg-[#78350f]"></div></div> Sandstone</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_frost')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0ea5e9]"></div><div class="w-2 h-2 rounded-full bg-[#38bdf8]"></div></div> Frost</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_sky')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0284c7]"></div><div class="w-2 h-2 rounded-full bg-[#0369a1]"></div></div> Sky</button>
                         </div>
-                    </div>
+                    </details>
                 </div>
 
                 <div class="border-t-2 border-[var(--border-color)] pt-3">
@@ -460,23 +491,6 @@
                     </button>
                 </div>
             </div>
-
-            <div class="p-4 md:w-1/3 bg-[var(--card-bg)] flex flex-col relative justify-center border-l-2 border-[var(--border-color)]">
-                <div class="text-[9px] font-bold tracking-widest text-[var(--text-muted)] uppercase mb-4">Color Palette Live View</div>
-                
-                <div class="w-full bg-[var(--bg-color)] border-3 border-[var(--border-color)] p-3 shadow-[4px_4px_0_0_var(--shadow-color)] flex flex-col gap-2 transition-all" style="transition-duration: 0.4s;">
-                    <div class="text-sm archivo-black text-[var(--text-main)]">Dashboard View</div>
-                    <div class="text-[10px] text-[var(--text-muted)]">Sample text rendering on the current background.</div>
-                    
-                    <div class="flex gap-2 mt-2">
-                        <div class="flex-1 h-10 border-2 border-[var(--border-color)] flex items-center justify-center font-bold text-[10px] bg-[var(--accent-1)] text-[var(--accent-1-text)]">Accent 1</div>
-                        <div class="flex-1 h-10 border-2 border-[var(--border-color)] flex items-center justify-center font-bold text-[10px] bg-[var(--accent-2)] text-[var(--accent-2-text)]">Accent 2</div>
-                    </div>
-                    <button class="w-full mt-2 py-2 border-2 border-[var(--border-color)] font-bold uppercase text-[10px] bg-[var(--card-bg)] text-[var(--text-main)]">
-                        Secondary Button
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -487,6 +501,8 @@
         let initialDOMOrder = Array.from(grid.children);
         let currentWeatherData = { temp: 20, hum: 50, precip: 0, wind: 10 };
         let isDynamicThemeActive = false;
+        let selectedLat = -1.2921;
+        let selectedLon = 36.8219;
 
         const sortableGrid = Sortable.create(grid, {
             animation: 200,
@@ -522,15 +538,50 @@
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function toggleThemeModal() { document.getElementById('theme-modal').classList.toggle('hidden'); }
 
+        const widgetInfoData = {
+            controls: { title: "Control Center", text: "Set your target logistics hub, farm, or global location. Search triggers a real-time fetch of environmental and meteorological data." },
+            metrics: { title: "Live Metrics", text: "Real-time weather parameters affecting cargo and crop stability, including sensible temperature, humidity percentage, wind velocity, and UV exposure." },
+            map: { title: "Topology Map", text: "Interactive geographic overlay showing regional weather patterns. Toggle precipitation radar and wind streamlines to visualize immediate logistical threats." },
+            meteogram: { title: "Meteogram Chart", text: "A multi-layered 24-hour forecasting tool combining temperature trends and wind speeds to assist in short-term logistical planning and dispatch." },
+            logistics: { title: "Logistics Engine", text: "Monitors critical transport thresholds. Alerts if ambient temperatures compromise cold-chain stability (2-8°C) or if high winds pose rollover risks for freight." },
+            agro: { title: "Agro-Logic", text: "Calculates agricultural impacts based on ambient moisture. Monitors precipitation levels and estimates pest or fungal vector probabilities linked to high humidity." }
+        };
+
+        function showInfo(id) {
+            const data = widgetInfoData[id];
+            if(!data) return;
+            document.getElementById('info-title').innerText = data.title;
+            document.getElementById('info-text').innerText = data.text;
+            document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        function closeInfo() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
         const themePalettes = {
             dark_midnight: { bg: '#121212', card: '#1e1e1e', text: '#e0e0e0', muted: '#9ca3af', border: '#333333', a1: '#4ade80', a1t: '#121212', a2: '#818cf8', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
             dark_cyberpunk: { bg: '#09090b', card: '#18181b', text: '#f4f4f5', muted: '#a1a1aa', border: '#27272a', a1: '#f472b6', a1t: '#121212', a2: '#22d3ee', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
             dark_solar: { bg: '#171717', card: '#262626', text: '#f5f5f5', muted: '#a3a3a3', border: '#404040', a1: '#fb923c', a1t: '#121212', a2: '#facc15', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
             dark_toxic: { bg: '#0f172a', card: '#1e293b', text: '#f8fafc', muted: '#94a3b8', border: '#334155', a1: '#a3e635', a1t: '#121212', a2: '#c084fc', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
+            dark_matrix: { bg: '#020617', card: '#0f172a', text: '#4ade80', muted: '#22c55e', border: '#166534', a1: '#22c55e', a1t: '#020617', a2: '#16a34a', a2t: '#ffffff', map: 'invert(100%) hue-rotate(120deg) brightness(90%)', shadow: '#000000' },
+            dark_nebula: { bg: '#1e1b4b', card: '#312e81', text: '#e0e7ff', muted: '#a5b4fc', border: '#4338ca', a1: '#d946ef', a1t: '#ffffff', a2: '#8b5cf6', a2t: '#ffffff', map: 'invert(100%) hue-rotate(220deg)', shadow: '#000000' },
+            dark_synth: { bg: '#2e1065', card: '#4c1d95', text: '#fdf4ff', muted: '#f0abfc', border: '#7e22ce', a1: '#e879f9', a1t: '#2e1065', a2: '#2dd4bf', a2t: '#2e1065', map: 'invert(100%) hue-rotate(280deg)', shadow: '#000000' },
+            dark_ocean: { bg: '#082f49', card: '#0c4a6e', text: '#e0f2fe', muted: '#7dd3fc', border: '#0369a1', a1: '#0ea5e9', a1t: '#ffffff', a2: '#3b82f6', a2t: '#ffffff', map: 'invert(100%) hue-rotate(200deg)', shadow: '#000000' },
+            dark_blood: { bg: '#450a0a', card: '#7f1d1d', text: '#fee2e2', muted: '#fca5a5', border: '#991b1b', a1: '#ef4444', a1t: '#ffffff', a2: '#dc2626', a2t: '#ffffff', map: 'invert(100%) hue-rotate(340deg)', shadow: '#000000' },
+            dark_charcoal: { bg: '#020617', card: '#0f172a', text: '#f8fafc', muted: '#64748b', border: '#1e293b', a1: '#94a3b8', a1t: '#020617', a2: '#64748b', a2t: '#ffffff', map: 'invert(100%) grayscale(100%)', shadow: '#000000' },
+
             light_clean: { bg: '#f8fafc', card: '#ffffff', text: '#0f172a', muted: '#64748b', border: '#cbd5e1', a1: '#3b82f6', a1t: '#ffffff', a2: '#10b981', a2t: '#ffffff', map: 'none', shadow: '#94a3b8' },
             light_paper: { bg: '#fdf6e3', card: '#eee8d5', text: '#073642', muted: '#586e75', border: '#ccc5b9', a1: '#cb4b16', a1t: '#ffffff', a2: '#2aa198', a2t: '#ffffff', map: 'none', shadow: '#93a1a1' },
             light_corp: { bg: '#f1f5f9', card: '#f8fafc', text: '#1e293b', muted: '#475569', border: '#94a3b8', a1: '#1d4ed8', a1t: '#ffffff', a2: '#475569', a2t: '#ffffff', map: 'none', shadow: '#64748b' },
             light_rose: { bg: '#fff1f2', card: '#ffe4e6', text: '#881337', muted: '#be123c', border: '#fecdd3', a1: '#e11d48', a1t: '#ffffff', a2: '#f43f5e', a2t: '#ffffff', map: 'none', shadow: '#fda4af' },
+            light_mint: { bg: '#f0fdf4', card: '#f2fbf5', text: '#14532d', muted: '#16a34a', border: '#bbf7d0', a1: '#14b8a6', a1t: '#ffffff', a2: '#84cc16', a2t: '#ffffff', map: 'none', shadow: '#86efac' },
+            light_lavender: { bg: '#faf5ff', card: '#ffffff', text: '#4c1d95', muted: '#7e22ce', border: '#e9d5ff', a1: '#8b5cf6', a1t: '#ffffff', a2: '#d946ef', a2t: '#ffffff', map: 'none', shadow: '#d8b4fe' },
+            light_citrus: { bg: '#fffbeb', card: '#fef3c7', text: '#78350f', muted: '#b45309', border: '#fde68a', a1: '#f59e0b', a1t: '#ffffff', a2: '#f97316', a2t: '#ffffff', map: 'none', shadow: '#fcd34d' },
+            light_sand: { bg: '#fefce8', card: '#fef9c3', text: '#713f12', muted: '#a16207', border: '#fef08a', a1: '#b45309', a1t: '#ffffff', a2: '#78350f', a2t: '#ffffff', map: 'none', shadow: '#fde047' },
+            light_frost: { bg: '#f0f9ff', card: '#e0f2fe', text: '#0c4a6e', muted: '#0284c7', border: '#bae6fd', a1: '#0ea5e9', a1t: '#ffffff', a2: '#38bdf8', a2t: '#121212', map: 'none', shadow: '#7dd3fc' },
+            light_sky: { bg: '#e0f2fe', card: '#f0f9ff', text: '#082f49', muted: '#0369a1', border: '#7dd3fc', a1: '#0284c7', a1t: '#ffffff', a2: '#0369a1', a2t: '#ffffff', map: 'none', shadow: '#38bdf8' },
+
             desert_base: { bg: '#fef3c7', card: '#fde68a', text: '#78350f', muted: '#b45309', border: '#fcd34d', a1: '#d97706', a1t: '#ffffff', a2: '#059669', a2t: '#ffffff', map: 'none', shadow: '#d97706' },
             desert_rainy: { bg: '#d6d3d1', card: '#e7e5e4', text: '#44403c', muted: '#78716c', border: '#a8a29e', a1: '#0284c7', a1t: '#ffffff', a2: '#ca8a04', a2t: '#ffffff', map: 'none', shadow: '#78716c' },
             desert_stormy: { bg: '#92400e', card: '#78350f', text: '#fef3c7', muted: '#fcd34d', border: '#b45309', a1: '#fcd34d', a1t: '#78350f', a2: '#f87171', a2t: '#78350f', map: 'invert(100%) hue-rotate(180deg)', shadow: '#451a03' },
@@ -648,15 +699,18 @@
                 const wind = currentWeatherData.wind;
                 const ccStatus = document.getElementById('cold-chain-status');
                 const ccMsg = document.getElementById('cold-chain-msg');
+                const ccBar = document.getElementById('cold-chain-bar');
                 
                 if(temp > 8 || temp < 2) {
                     ccStatus.innerText = 'CRITICAL';
                     ccStatus.style.backgroundColor = 'var(--accent-error)';
                     ccMsg.innerText = `Temp (${temp}°C) outside bounds.`;
+                    ccBar.style.backgroundColor = 'var(--accent-error)';
                 } else {
                     ccStatus.innerText = 'STABLE';
                     ccStatus.style.backgroundColor = 'var(--accent-1)';
                     ccMsg.innerText = `Temp (${temp}°C) normal.`;
+                    ccBar.style.backgroundColor = 'var(--accent-1)';
                 }
 
                 const wRisk = document.getElementById('wind-risk-status');
@@ -682,6 +736,9 @@
                     meteogramChart.update();
                 }
 
+                if(map) map.setView([lat, lon], 10);
+                if(radarLayer) radarLayer.setLatLng([lat, lon]);
+
                 evaluateDynamicTheme();
 
             } catch(e) {
@@ -694,19 +751,66 @@
             }, 500);
         }
 
-        function applyPresetOrg() {
-            const select = document.getElementById('org-preset');
-            const name = select.options[select.selectedIndex].text;
-            const coords = select.value.split(',');
-            const lat = parseFloat(coords[0]);
-            const lon = parseFloat(coords[1]);
+        // Location Autofill Logic
+        const locationInput = document.getElementById('location-input');
+        const autocompleteResults = document.getElementById('autocomplete-results');
+        let searchTimeout;
 
+        locationInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 3) {
+                autocompleteResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
+                    const data = await res.json();
+                    
+                    autocompleteResults.innerHTML = '';
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(place => {
+                            const div = document.createElement('div');
+                            div.className = 'autofill-item text-[var(--text-main)]';
+                            div.innerText = `${place.name}, ${place.admin1 ? place.admin1 + ', ' : ''}${place.country}`;
+                            div.onclick = () => {
+                                selectLocation(place.name, place.latitude, place.longitude);
+                            };
+                            autocompleteResults.appendChild(div);
+                        });
+                        autocompleteResults.classList.remove('hidden');
+                    } else {
+                        autocompleteResults.classList.add('hidden');
+                    }
+                } catch(err) {
+                    console.error("Geocoding Error");
+                }
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!locationInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+                autocompleteResults.classList.add('hidden');
+            }
+        });
+
+        function selectLocation(name, lat, lon) {
+            locationInput.value = name;
+            autocompleteResults.classList.add('hidden');
             document.getElementById('header-location').innerText = name;
-            if(map) map.setView([lat, lon], 10);
+            selectedLat = lat;
+            selectedLon = lon;
             fetchWeather(lat, lon);
         }
 
-        function triggerAnalysis() { applyPresetOrg(); }
+        function triggerAnalysis() { 
+            if(selectedLat && selectedLon) {
+                fetchWeather(selectedLat, selectedLon);
+            }
+        }
 
         let meteogramChart;
         function initChart() {
@@ -753,10 +857,10 @@
 
         let map; let radarLayer, windLayer;
         function initMap() {
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-1.2921, 36.8219], 10);
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([selectedLat, selectedLon], 10);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
-            radarLayer = L.circle([-1.2921, 36.8219], { color: 'blue', fillColor: '#3b82f6', fillOpacity: 0.5, radius: 20000 }).addTo(map);
+            radarLayer = L.circle([selectedLat, selectedLon], { color: 'blue', fillColor: '#3b82f6', fillOpacity: 0.5, radius: 20000 }).addTo(map);
             const windPaths = [[[-1.3, 36.7], [-1.2, 36.9]], [[-1.35, 36.75], [-1.25, 36.95]]];
             windLayer = L.layerGroup(windPaths.map(p => L.polyline(p, {color: 'var(--accent-2)', weight: 3, dashArray: '5, 10'})));
             setTimeout(() => map.invalidateSize(), 100);
@@ -782,7 +886,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
             initMap();
-            applyPresetOrg();
+            selectLocation('Nairobi, Kenya', -1.2921, 36.8219); // Default Load
             window.addEventListener('resize', () => {
                 if(map) map.invalidateSize();
                 if(meteogramChart) meteogramChart.resize();
