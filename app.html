@@ -1,985 +1,721 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>WeClimate - Advanced Weather & Logistics</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>WeAI: Weather & Logistics Engine</title>
+    <meta name="theme-color" content="#121212">
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PWA Manifest embedded -->
+    <link rel="manifest" href='data:application/manifest+json;utf8,{"name":"WeAI App","short_name":"WeAI","start_url":".","display":"standalone","background_color":"#121212","theme_color":"#4ade80","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGFkZTgwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJ2MjBMMiAxMmwxMC0xMHoiLz48L3N2Zz4=","sizes":"192x192","type":"image/svg+xml"}]}'>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Lucide icons -->
-  <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
-  
-  <!-- SortableJS for flawless Mobile & Desktop Drag and Drop -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
-  <style>
-    /* =========================================
-       THEME PRESETS & VARIABLES
-       ========================================= */
-    :root {
-      /* Midnight Black (Default) */
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
-      --text-main: #e0e0e0;
-      --text-muted: #9ca3af;
-      --border-color: #333333;
-      --shadow-color: #000000;
-      --accent-1: #4ade80; /* Green */
-      --accent-2: #818cf8; /* Indigo */
-    }
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
 
-    :root[data-theme="sage"] {
-      --bg-color: #e8ece8; --card-bg: #f4f7f4; --text-main: #2d3a31; --text-muted: #5b7060;
-      --border-color: #2d3a31; --shadow-color: #1b241d; --accent-1: #4a7c59; --accent-2: #d97743;
-    }
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    :root[data-theme="ocean"] {
-      --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
-      --border-color: #334155; --shadow-color: #020617; --accent-1: #38bdf8; --accent-2: #34d399;
-    }
+    <!-- Leaflet Map CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    :root[data-theme="mocha"] {
-      --bg-color: #292524; --card-bg: #443c3a; --text-main: #f5f5f4; --text-muted: #d6d3d1;
-      --border-color: #1c1917; --shadow-color: #0c0a09; --accent-1: #facc15; --accent-2: #fb923c;
-    }
+    <style>
+        /* =========================================
+           WEAI THEME VARIABLES
+           ========================================= */
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #9ca3af;
+            --border-color: #333333;
+            --shadow-color: #000000;
+            
+            /* Dynamic Accents (Default Theme) */
+            --accent-1: #4ade80; /* Green */
+            --accent-2: #818cf8; /* Indigo */
+            
+            /* Status Colors */
+            --accent-error: #ef4444; /* Red */
+            --accent-warn: #eab308; /* Yellow */
+        }
 
-    :root[data-theme="cyberpunk"] {
-      --bg-color: #09090b; --card-bg: #18181b; --text-main: #f4f4f5; --text-muted: #a1a1aa;
-      --border-color: #f472b6; --shadow-color: #be185d; --accent-1: #22d3ee; --accent-2: #f472b6;
-    }
+        body {
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            font-family: 'Space Mono', monospace;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
 
-    :root[data-theme="forest"] {
-      --bg-color: #064e3b; --card-bg: #065f46; --text-main: #ecfdf5; --text-muted: #a7f3d0;
-      --border-color: #047857; --shadow-color: #022c22; --accent-1: #10b981; --accent-2: #fbbf24;
-    }
+        h1, h2, h3, .archivo-black { 
+            font-family: 'Archivo Black', sans-serif; 
+        }
 
-    :root[data-theme="sunset"] {
-      --bg-color: #450a0a; --card-bg: #7f1d1d; --text-main: #fef2f2; --text-muted: #fca5a5;
-      --border-color: #991b1b; --shadow-color: #2e0808; --accent-1: #fb923c; --accent-2: #fcd34d;
-    }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); border-left: 2px solid var(--border-color); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-1); border: 2px solid var(--bg-color); }
 
-    :root[data-theme="arctic"] {
-      --bg-color: #e0f2fe; --card-bg: #f0f9ff; --text-main: #0c4a6e; --text-muted: #0369a1;
-      --border-color: #0c4a6e; --shadow-color: #082f49; --accent-1: #0ea5e9; --accent-2: #6366f1;
-    }
+        /* Neo-Brutalist Utilities */
+        .neo-box {
+            background-color: var(--card-bg);
+            border: 4px solid var(--border-color);
+            box-shadow: 6px 6px 0 0 var(--shadow-color);
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
 
-    :root[data-theme="lavender"] {
-      --bg-color: #1e1b2e; --card-bg: #2a2640; --text-main: #e8e0f0; --text-muted: #a78bca;
-      --border-color: #4c3a7a; --shadow-color: #110e1d; --accent-1: #c084fc; --accent-2: #f0abfc;
-    }
+        .neo-btn {
+            background-color: var(--accent-1); 
+            color: var(--bg-color);
+            border: 3px solid var(--border-color); 
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+            transition: all 0.1s; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer;
+            text-transform: uppercase;
+            font-family: 'Archivo Black', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
 
-    :root[data-theme="sandstorm"] {
-      --bg-color: #2c1f0e; --card-bg: #3d2c14; --text-main: #fef3c7; --text-muted: #d4a76a;
-      --border-color: #78350f; --shadow-color: #1a1005; --accent-1: #f59e0b; --accent-2: #dc2626;
-    }
+        .neo-btn:active {
+            box-shadow: 0 0 0 0 var(--shadow-color); 
+            transform: translate(4px, 4px);
+        }
 
-    :root[data-theme="volcano"] {
-      --bg-color: #1a0a0a; --card-bg: #2d1010; --text-main: #fef2f2; --text-muted: #f87171;
-      --border-color: #991b1b; --shadow-color: #0f0505; --accent-1: #ef4444; --accent-2: #f97316;
-    }
+        .neo-btn-secondary {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+        }
 
-    :root[data-theme="coral"] {
-      --bg-color: #0e1a2b; --card-bg: #132436; --text-main: #e0f7fa; --text-muted: #80cbc4;
-      --border-color: #1b4d5c; --shadow-color: #060f18; --accent-1: #14b8a6; --accent-2: #fb7185;
-    }
+        /* Gradient Text */
+        .text-gradient {
+            background: linear-gradient(to right, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.3s ease;
+        }
 
-    /* =========================================
-       GLOBAL STYLES
-       ========================================= */
-    body {
-      background-color: var(--bg-color); color: var(--text-main);
-      font-family: 'Space Mono', monospace;
-      transition: background-color 0.3s ease, color 0.3s ease;
-      -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
-    }
+        /* Map Dark Mode Filter Hack */
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out,
+        .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
 
-    h1, h2, h3, .archivo-black { font-family: 'Archivo Black', sans-serif; }
+        /* Modal Overlay */
+        #theme-modal {
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+        }
 
-    /* Neo-Brutalist Global Utilities */
-    .neo-box {
-      background-color: var(--card-bg);
-      border: 3px solid var(--border-color);
-      box-shadow: 4px 4px 0 0 var(--shadow-color);
-      border-radius: 8px;
-    }
-    
-    @media (min-width: 768px) {
-        .neo-box { border-width: 4px; box-shadow: 6px 6px 0 0 var(--shadow-color); }
-    }
-
-    .neo-btn {
-      background-color: var(--accent-1); color: var(--bg-color);
-      border: 3px solid var(--border-color); box-shadow: 4px 4px 0 0 var(--shadow-color);
-      transition: all 0.1s; border-radius: 6px; font-weight: bold; cursor: pointer;
-    }
-    
-    .neo-btn-secondary {
-      background-color: var(--card-bg); color: var(--text-main);
-      border: 3px solid var(--border-color); box-shadow: 4px 4px 0 0 var(--shadow-color);
-      transition: all 0.1s; border-radius: 6px; cursor: pointer;
-    }
-
-    .neo-btn:active, .neo-btn-secondary:active {
-      box-shadow: 0 0 0 0 var(--shadow-color); transform: translate(4px, 4px);
-    }
-
-    .neo-input {
-      background-color: var(--card-bg); color: var(--text-main);
-      border: 3px solid var(--border-color); border-radius: 6px;
-    }
-    .neo-input:focus { outline: none; border-color: var(--accent-2); }
-
-    /* Custom Scrollbar */
-    .custom-scrollbar::-webkit-scrollbar { height: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: var(--accent-1); border-radius: 4px; }
-
-    /* =========================================
-       DRAG AND DROP STYLES (SortableJS)
-       ========================================= */
-    .drag-handle { cursor: grab; touch-action: none; }
-    .drag-handle:active { cursor: grabbing; }
-    .sortable-ghost { opacity: 0.4; background-color: var(--bg-color); border: 2px dashed var(--accent-1); }
-    .sortable-drag { cursor: grabbing !important; }
-
-    /* Modals */
-    dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
-  </style>
+        /* Custom Input Range */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            background: var(--accent-1);
+            border: 2px solid var(--bg-color);
+            cursor: pointer;
+            margin-top: -8px;
+            border-radius: 0;
+            box-shadow: 2px 2px 0 0 var(--shadow-color);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--border-color);
+        }
+        
+        /* Preview variables isolated for the modal */
+        #theme-preview-box {
+            --preview-bg: var(--card-bg);
+            --preview-border: var(--border-color);
+            --preview-accent1: var(--accent-1);
+            --preview-accent2: var(--accent-2);
+        }
+    </style>
 </head>
-<body class="p-2 md:p-6 min-h-screen flex flex-col items-center overflow-x-hidden">
+<body class="min-h-screen flex flex-col p-4 md:p-6 lg:p-8 gap-6">
 
-  <!-- Info & QOL Modal -->
-  <dialog id="infoModal" class="neo-box p-0 max-w-2xl w-[95%] mx-auto mt-10 md:mt-20 bg-[var(--card-bg)] text-[var(--text-main)] m-2">
-    <div class="p-4 md:p-6 border-b-4 border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]">
-        <h2 class="text-xl md:text-2xl archivo-black flex items-center gap-2">
-            <i data-lucide="info" class="text-[var(--accent-1)]"></i>
-            <span data-i18n="guide_title">WeClimate Guide & Settings</span>
-        </h2>
-        <button onclick="document.getElementById('infoModal').close()" class="text-[var(--text-muted)] hover:text-[var(--accent-2)]">
-            <i data-lucide="x" class="w-6 h-6 md:w-8 md:h-8"></i>
-        </button>
-    </div>
-    <div class="p-4 md:p-6 space-y-6 text-sm md:text-base leading-relaxed max-h-[60vh] overflow-y-auto custom-scrollbar">
-        <!-- Settings/QOL Section -->
-        <div class="bg-[var(--bg-color)] p-4 rounded border-2 border-[var(--border-color)] mb-6">
-            <h3 class="font-bold text-lg archivo-black mb-3 text-[var(--accent-2)]" data-i18n="quick_settings">Quick Settings</h3>
-            <div class="flex flex-wrap gap-4">
-                <button id="toggleUnitBtn" class="neo-btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-                    <i data-lucide="thermometer"></i> <span id="unitLabel">Use Fahrenheit (°F)</span>
-                </button>
-                <button id="resetLayoutBtn" class="neo-btn-secondary px-4 py-2 text-sm flex items-center gap-2 text-red-500 border-red-500">
-                    <i data-lucide="rotate-ccw"></i> <span data-i18n="reset_layout">Reset Layout</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Guide Section -->
-        <div class="flex gap-4 items-start">
-            <div class="bg-[var(--accent-1)] p-2 md:p-3 rounded-full text-[var(--bg-color)] shrink-0"><i data-lucide="image"></i></div>
+    <!-- Header -->
+    <header class="neo-box p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-[var(--bg-color)] border-[var(--accent-1)]">
+        <div class="flex items-center gap-4">
+            <i data-lucide="cpu" class="w-10 h-10 text-[var(--accent-1)]"></i>
             <div>
-                <h3 class="font-bold text-lg archivo-black mb-1" data-i18n="guide_theme_title">Image-to-Theme Engine</h3>
-                <p class="text-[var(--text-muted)] text-sm" data-i18n="guide_theme_desc">Click the camera icon next to themes to upload any image. The AI will extract the dominant colors and create a custom theme instantly!</p>
+                <h1 class="text-4xl md:text-5xl archivo-black text-gradient tracking-tighter leading-none">WeAI</h1>
+                <p class="text-[var(--text-muted)] text-xs uppercase tracking-widest font-bold mt-1">Weather & Logistics Engine</p>
             </div>
         </div>
-        <div class="flex gap-4 items-start">
-            <div class="bg-[var(--accent-1)] p-2 md:p-3 rounded-full text-[var(--bg-color)] shrink-0"><i data-lucide="layout-grid"></i></div>
-            <div>
-                <h3 class="font-bold text-lg archivo-black mb-1" data-i18n="guide_dashboard_title">Mobile Drag & Drop</h3>
-                <p class="text-[var(--text-muted)] text-sm" data-i18n="guide_dashboard_desc">Every widget can be moved. Grab the grip icon (⋮⋮) to organize your workspace on both mobile and desktop.</p>
-            </div>
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-center">
+            <button onclick="toggleThemeModal()" class="neo-btn neo-btn-secondary px-4 py-2 text-sm w-full md:w-auto">
+                <i data-lucide="palette" class="w-4 h-4"></i> Theme Creator
+            </button>
+            <button onclick="exportReport()" class="neo-btn px-4 py-2 text-sm w-full md:w-auto border-[var(--accent-2)]">
+                <i data-lucide="download" class="w-4 h-4"></i> Export Report
+            </button>
         </div>
-        <div class="flex gap-4 items-start">
-            <div class="bg-[var(--accent-2)] p-2 md:p-3 rounded-full text-[var(--bg-color)] shrink-0"><i data-lucide="truck"></i></div>
-            <div>
-                <h3 class="font-bold text-lg archivo-black mb-1" data-i18n="guide_logistics_title">Agro & Logistics</h3>
-                <p class="text-[var(--text-muted)] text-sm" data-i18n="guide_logistics_desc">Select a crop in controls. The engine will evaluate weather to provide farming advice and supply chain warnings.</p>
-            </div>
-        </div>
-    </div>
-    <div class="p-4 border-t-4 border-[var(--border-color)] text-right bg-[var(--bg-color)]">
-        <button onclick="document.getElementById('infoModal').close()" class="neo-btn px-6 py-2" data-i18n="close">Close</button>
-    </div>
-  </dialog>
+    </header>
 
-  <!-- Hidden File Input for Image Theme -->
-  <input type="file" id="imageThemeInput" accept="image/*" class="hidden">
-  <canvas id="colorCanvas" class="hidden"></canvas>
-
-  <!-- Error Notification Box -->
-  <div id="errorBox" class="hidden fixed top-4 right-4 bg-red-900 text-white border-4 border-red-500 p-4 shadow-[4px_4px_0_0_rgba(239,68,68,1)] z-50 transition-all font-bold uppercase text-sm max-w-[90%] md:max-w-sm rounded">
-      <div class="flex items-center gap-2 mb-2">
-          <i data-lucide="alert-triangle"></i>
-          <span id="errorMessage">Error</span>
-      </div>
-      <button onclick="document.getElementById('errorBox').classList.add('hidden')" class="bg-red-500 text-white px-3 py-1 text-xs uppercase hover:bg-red-700 transition-colors border-2 border-red-300">Close</button>
-  </div>
-
-  <!-- App Container -->
-  <div class="w-full max-w-7xl space-y-4 md:space-y-8">
-      
-      <!-- Responsive Header -->
-      <header class="neo-box p-3 md:p-6 flex flex-col lg:flex-row justify-between items-center gap-4 relative z-10">
-          <div class="flex items-center justify-between w-full lg:w-auto">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 md:w-12 md:h-12 bg-[var(--accent-1)] rounded-full flex items-center justify-center border-2 md:border-4 border-[var(--border-color)]">
-                    <i data-lucide="globe-2" class="text-[var(--bg-color)] w-5 h-5 md:w-6 md:h-6"></i>
+    <!-- Main Dashboard Grid -->
+    <main class="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1">
+        
+        <!-- Left Column: Visuals (Meteogram & Map) -->
+        <div class="xl:col-span-2 flex flex-col gap-6">
+            
+            <!-- Multi-layered Meteogram -->
+            <section class="neo-box p-5 flex flex-col relative overflow-hidden h-[400px]">
+                <div class="flex justify-between items-center mb-4 border-b-2 border-[var(--border-color)] pb-2">
+                    <h2 class="text-xl archivo-black flex items-center gap-2">
+                        <i data-lucide="activity" class="text-[var(--accent-2)]"></i> Advanced Meteogram
+                    </h2>
+                    <span class="text-xs bg-[var(--border-color)] px-2 py-1 rounded">Next 24 Hrs</span>
                 </div>
-                <h1 class="text-3xl md:text-4xl uppercase tracking-tighter" style="color: var(--text-main);">WeClimate</h1>
-              </div>
-              <!-- Mobile Info Btn -->
-              <button onclick="document.getElementById('infoModal').showModal()" class="neo-btn-secondary p-2 lg:hidden">
-                <i data-lucide="settings" class="w-5 h-5 text-[var(--accent-1)]"></i>
-              </button>
-          </div>
-          
-          <div class="flex flex-wrap lg:flex-nowrap gap-2 md:gap-3 items-center w-full lg:w-auto justify-center">
-            
-            <button onclick="document.getElementById('infoModal').showModal()" class="neo-btn-secondary p-3 hidden lg:flex items-center gap-2" title="Settings / Info">
-                <i data-lucide="settings" class="w-5 h-5 text-[var(--accent-1)]"></i>
-            </button>
+                <div class="flex-1 w-full relative">
+                    <canvas id="meteogram"></canvas>
+                </div>
+            </section>
 
-            <div class="flex gap-1 w-full md:w-auto order-3 lg:order-none">
-                <select id="themeSelect" class="neo-input p-2 md:p-3 font-bold uppercase text-xs md:text-sm flex-grow">
-                    <option value="midnight">🌙 Midnight</option>
-                    <option value="sage">🌿 Sage Green</option>
-                    <option value="ocean">🌊 Ocean Blue</option>
-                    <option value="mocha">☕ Mocha</option>
-                    <option value="cyberpunk">⚡ Cyberpunk</option>
-                    <option value="forest">🌲 Forest</option>
-                    <option value="sunset">🌅 Sunset</option>
-                    <option value="arctic">❄️ Arctic</option>
-                    <option value="lavender">💜 Lavender</option>
-                    <option value="sandstorm">🏜️ Sandstorm</option>
-                    <option value="volcano">🌋 Volcano</option>
-                    <option value="coral">🪸 Coral Reef</option>
-                    <option value="custom" disabled hidden>🎨 Custom Image</option>
-                </select>
-                <button id="imgThemeBtn" class="neo-btn-secondary p-2 md:p-3" title="Extract Theme from Image">
-                    <i data-lucide="camera" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-2)]"></i>
-                </button>
+            <!-- Area Map -->
+            <section class="neo-box p-5 flex flex-col h-[400px]">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b-2 border-[var(--border-color)] pb-2 gap-2">
+                    <h2 class="text-xl archivo-black flex items-center gap-2">
+                        <i data-lucide="map" class="text-[var(--accent-1)]"></i> Regional Radar Layers
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="toggleMapLayer('precip')" id="btn-precip" class="neo-btn px-2 py-1 text-xs bg-[var(--accent-2)] text-white">Precip Radar</button>
+                        <button onclick="toggleMapLayer('wind')" id="btn-wind" class="neo-btn neo-btn-secondary px-2 py-1 text-xs">Wind Streamlines</button>
+                    </div>
+                </div>
+                <div id="map" class="flex-1 w-full bg-[#1a1a1a] border-2 border-[var(--border-color)] z-0"></div>
+            </section>
+        </div>
+
+        <!-- Right Column: Agro & Logistics Engines -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Logistics Engine Pro -->
+            <section class="neo-box p-5 bg-[var(--bg-color)] border-[var(--accent-2)] relative overflow-hidden">
+                <i data-lucide="truck" class="absolute -top-4 -right-4 w-24 h-24 text-[var(--accent-2)] opacity-10"></i>
+                <h2 class="text-xl archivo-black mb-4 border-b-2 border-[var(--border-color)] pb-2 text-[var(--accent-2)]">Logistics Engine Pro</h2>
+                
+                <div class="space-y-5">
+                    <!-- Cold Chain Threshold -->
+                    <div>
+                        <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase mb-2 flex justify-between">
+                            <span>Cold Chain Thresholds</span>
+                            <span class="text-[var(--accent-error)] animate-pulse">ALERT</span>
+                        </h3>
+                        <div class="bg-[var(--card-bg)] border-2 border-[var(--accent-error)] p-3 rounded">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i data-lucide="thermometer-snowflake" class="text-[var(--accent-error)]"></i>
+                                <span class="font-bold text-[var(--text-main)]">Route 4: Vaccine Transport</span>
+                            </div>
+                            <p class="text-sm text-[var(--text-muted)] mb-2">Ambient temperature ahead (29°C) exceeds safe limits (2-8°C).</p>
+                            <div class="w-full bg-[var(--border-color)] h-2">
+                                <div class="bg-[var(--accent-error)] h-2" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route Risk -->
+                    <div>
+                        <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase mb-2">Route Risk Analysis</h3>
+                        <div class="bg-[var(--card-bg)] border-2 border-[var(--accent-warn)] p-3 rounded">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i data-lucide="wind" class="text-[var(--accent-warn)]"></i>
+                                <span class="font-bold text-[var(--text-main)]">Highway A104</span>
+                            </div>
+                            <p class="text-sm text-[var(--text-muted)]">High wind warnings (45km/h) detected. Tip-over risk for light-load trailers.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Agro-Logic Expansion -->
+            <section class="neo-box p-5 bg-[var(--bg-color)] border-[var(--accent-1)] relative overflow-hidden">
+                <i data-lucide="sprout" class="absolute -bottom-4 -right-4 w-32 h-32 text-[var(--accent-1)] opacity-10"></i>
+                <h2 class="text-xl archivo-black mb-4 border-b-2 border-[var(--border-color)] pb-2 text-[var(--accent-1)]">Agro-Logic Expansion</h2>
+                
+                <div class="space-y-5">
+                    <!-- Growing Degree Days -->
+                    <div>
+                        <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase mb-2 flex justify-between">
+                            <span>Growing Degree Days (GDD)</span>
+                            <span class="text-[var(--accent-1)]">OPTIMAL</span>
+                        </h3>
+                        <div class="bg-[var(--card-bg)] border-2 border-[var(--border-color)] p-3 rounded flex items-end gap-4">
+                            <div class="text-4xl archivo-black text-[var(--text-main)]">1,240</div>
+                            <div class="text-sm text-[var(--text-muted)] pb-1">Base 10°C<br/>Stage: <span class="text-[var(--accent-1)] font-bold">Flowering</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Pest & Disease Risk -->
+                    <div>
+                        <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase mb-2">Pest & Disease Risk</h3>
+                        <div class="bg-[var(--card-bg)] border-2 border-[var(--accent-warn)] p-3 rounded">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i data-lucide="bug" class="text-[var(--accent-warn)]"></i>
+                                <span class="font-bold text-[var(--text-main)]">Fungal Blight Risk: 72%</span>
+                            </div>
+                            <p class="text-sm text-[var(--text-muted)]">Elevated humidity and current temp range (22-26°C) creates high-risk vector.</p>
+                            <button class="w-full mt-3 bg-transparent border-2 border-[var(--accent-warn)] text-[var(--accent-warn)] text-xs font-bold py-1 uppercase hover:bg-[var(--accent-warn)] hover:text-black transition-colors">
+                                View Mitigation Steps
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Theme Creator 2.0 Modal -->
+    <div id="theme-modal" class="fixed inset-0 z-[100] hidden flex justify-center items-center p-4">
+        <div class="neo-box max-w-3xl w-full bg-[var(--bg-color)] flex flex-col md:flex-row overflow-hidden border-[var(--accent-2)]">
+            
+            <!-- Settings Panel -->
+            <div class="p-6 md:w-1/2 flex flex-col gap-6 border-b md:border-b-0 md:border-r-2 border-[var(--border-color)]">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl archivo-black text-[var(--accent-2)] flex items-center gap-2">
+                        <i data-lucide="wand-2"></i> Theme Engine 2.0
+                    </h2>
+                    <button onclick="toggleThemeModal()" class="text-[var(--text-muted)] hover:text-white"><i data-lucide="x"></i></button>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-[var(--text-muted)] mb-2">1. Upload Inspiration Image</label>
+                    <div class="border-2 border-dashed border-[var(--border-color)] p-4 text-center cursor-pointer hover:bg-[var(--card-bg)] transition-colors relative">
+                        <input type="file" id="image-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <i data-lucide="image-plus" class="mx-auto mb-2 text-[var(--text-muted)]"></i>
+                        <span class="text-sm text-[var(--text-muted)]">Click or Drop Image Here</span>
+                    </div>
+                    <canvas id="theme-canvas" class="hidden"></canvas> <!-- Hidden canvas for processing -->
+                </div>
+
+                <div id="sliders-container" class="opacity-50 pointer-events-none transition-opacity">
+                    <label class="block text-sm font-bold text-[var(--text-muted)] mb-2">2. Fine-Tune Extraction</label>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Saturation</span> <span id="sat-val">100%</span>
+                        </div>
+                        <input type="range" id="sat-slider" min="0" max="200" value="100">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Brightness</span> <span id="bri-val">100%</span>
+                        </div>
+                        <input type="range" id="bri-slider" min="0" max="200" value="100">
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-4 flex gap-2">
+                    <button onclick="applyTheme()" id="btn-apply-theme" class="neo-btn w-full bg-[var(--accent-2)] border-[var(--accent-2)] opacity-50 pointer-events-none">Apply Theme</button>
+                </div>
             </div>
 
-            <select id="languageSelect" class="neo-input p-2 md:p-3 font-bold uppercase text-xs md:text-sm w-[48%] md:w-auto order-4 lg:order-none">
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-                <option value="fr">FR</option>
-                <option value="ja">JA</option>
-                <option value="ko">KO</option>
-                <option value="ms">MS</option>
-                <option value="sw">SW</option>
-            </select>
+            <!-- Preview Panel -->
+            <div class="p-6 md:w-1/2 bg-[var(--card-bg)] flex flex-col items-center justify-center relative">
+                <div class="absolute top-4 left-4 text-xs font-bold tracking-widest text-[var(--text-muted)] uppercase">Live Preview</div>
+                
+                <!-- Miniature UI Preview -->
+                <div id="theme-preview-box" class="w-full max-w-sm mt-6 p-4 bg-[var(--preview-bg)] border-4 border-[var(--preview-border)] shadow-[4px_4px_0_0_#000] rounded">
+                    <h3 class="text-xl archivo-black text-[var(--preview-accent1)] mb-2">Extraction Result</h3>
+                    <p class="text-xs text-[var(--text-muted)] font-mono mb-4">Contrast testing for Pop-Industrial readability.</p>
+                    
+                    <div class="flex gap-2">
+                        <div class="flex-1 h-20 border-2 border-[var(--preview-border)] flex items-center justify-center font-bold text-xs bg-[var(--preview-accent1)] text-[#121212]">
+                            Primary
+                        </div>
+                        <div class="flex-1 h-20 border-2 border-[var(--preview-border)] flex items-center justify-center font-bold text-xs bg-[var(--preview-accent2)] text-[#121212]">
+                            Secondary
+                        </div>
+                    </div>
 
-            <div class="flex w-full md:w-auto order-1 lg:order-none">
-                <input type="text" id="searchInput" placeholder="Search City..." class="neo-input p-2 md:p-3 w-full md:w-48 font-bold uppercase text-xs md:text-sm border-r-0 rounded-r-none">
-                <button id="searchBtn" class="neo-btn p-2 md:p-3 font-bold uppercase flex items-center justify-center rounded-l-none border-l-0 border-[var(--border-color)]">
-                    <i data-lucide="search" class="w-4 h-4 md:w-5 md:h-5"></i>
-                </button>
+                    <button class="w-full mt-4 py-2 bg-[var(--preview-accent1)] text-[#121212] border-2 border-[var(--preview-border)] font-bold uppercase text-xs shadow-[2px_2px_0_0_#000]">
+                        Sample Action
+                    </button>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <button id="locateBtn" class="neo-btn-secondary p-2 md:p-3 font-bold uppercase w-[48%] md:w-auto flex justify-center items-center gap-2 order-2 lg:order-none">
-                <i data-lucide="map-pin" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-            </button>
-          </div>
-      </header>
-
-      <!-- Hero Area -->
-      <section class="neo-box p-6 md:p-12 text-center relative overflow-hidden z-10 bg-[var(--bg-color)]">
-          <h2 class="text-lg md:text-2xl font-bold uppercase text-[var(--text-muted)] mb-2 tracking-widest break-words" id="heroLocationName">--</h2>
-          <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12">
-              <div id="heroIconContainer" class="w-20 h-20 md:w-32 md:h-32 text-[var(--accent-1)] drop-shadow-lg">
-                  <i data-lucide="cloud-sun" class="w-full h-full"></i>
-              </div>
-              <div class="flex flex-col items-center md:items-start">
-                  <div class="text-6xl md:text-9xl archivo-black tracking-tighter" id="currentTemp">--°</div>
-                  <div class="text-xl md:text-3xl uppercase font-bold text-[var(--accent-2)] mt-1 md:mt-2 text-center md:text-left" id="currentCondition" data-i18n="awaiting">Awaiting Data</div>
-              </div>
-          </div>
-      </section>
-
-      <!-- SortableJS Grid for Widgets -->
-      <div id="widgetGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 z-10 relative items-start pb-10">
-          
-          <!-- Controls Widget -->
-          <section id="widget-controls" class="neo-box p-4 md:p-5 flex flex-col gap-4 col-span-1">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-2 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2 text-[var(--text-main)]">
-                      <i data-lucide="settings-2" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-                      <span data-i18n="controls">Controls</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="flex flex-col gap-1 md:gap-2">
-                  <label class="font-bold uppercase text-[10px] md:text-xs text-[var(--text-muted)]" data-i18n="location">Location</label>
-                  <select id="locationSelect" class="neo-input p-2 md:p-3 font-bold uppercase text-xs md:text-sm"></select>
-              </div>
-              <div class="flex flex-col gap-1 md:gap-2">
-                  <label class="font-bold uppercase text-[10px] md:text-xs text-[var(--text-muted)]" data-i18n="crop_focus">Crop / Focus</label>
-                  <select id="cropSelect" class="neo-input p-2 md:p-3 font-bold uppercase text-xs md:text-sm">
-                    <option value="wheat" data-i18n="wheat">Wheat</option>
-                    <option value="corn" data-i18n="corn">Corn</option>
-                    <option value="rice" data-i18n="rice">Rice</option>
-                    <option value="soybeans" data-i18n="soybeans">Soybeans</option>
-                  </select>
-              </div>
-              <button id="getAdviceBtn" class="neo-btn w-full p-2 md:p-3 mt-1 md:mt-2 font-bold uppercase text-base md:text-lg archivo-black tracking-wider flex justify-center items-center gap-2">
-                <span data-i18n="go">ANALYZE</span> <i data-lucide="zap" class="w-4 h-4 md:w-5 md:h-5"></i>
-              </button>
-          </section>
-
-          <!-- Current Details Widget -->
-          <section id="widget-details" class="neo-box p-4 md:p-5 flex flex-col col-span-1">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2">
-                      <i data-lucide="activity" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-                      <span data-i18n="live_data">Live Metrics</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="grid grid-cols-2 gap-2 md:gap-3 flex-grow">
-                  <div class="bg-[var(--bg-color)] rounded border-2 border-[var(--border-color)] p-2 md:p-3 flex flex-col items-center justify-center text-center">
-                      <span class="text-[10px] md:text-xs uppercase font-bold text-[var(--text-muted)] mb-1" data-i18n="feels_like">Feels Like</span>
-                      <span class="text-lg md:text-xl archivo-black text-[var(--text-main)]" id="feelsLike">--°</span>
-                  </div>
-                  <div class="bg-[var(--bg-color)] rounded border-2 border-[var(--border-color)] p-2 md:p-3 flex flex-col items-center justify-center text-center">
-                      <span class="text-[10px] md:text-xs uppercase font-bold text-[var(--text-muted)] mb-1" data-i18n="humidity">Humidity</span>
-                      <span class="text-lg md:text-xl archivo-black text-[var(--text-main)]" id="humidity">--%</span>
-                  </div>
-                  <div class="bg-[var(--bg-color)] rounded border-2 border-[var(--border-color)] p-2 md:p-3 flex flex-col items-center justify-center text-center">
-                      <span class="text-[10px] md:text-xs uppercase font-bold text-[var(--text-muted)] mb-1" data-i18n="wind">Wind</span>
-                      <span class="text-lg md:text-xl archivo-black text-[var(--text-main)]" id="windSpeed">--</span>
-                  </div>
-                  <div class="bg-[var(--bg-color)] rounded border-2 border-[var(--border-color)] p-2 md:p-3 flex flex-col items-center justify-center text-center">
-                      <span class="text-[10px] md:text-xs uppercase font-bold text-[var(--text-muted)] mb-1" data-i18n="uv">UV Max</span>
-                      <span class="text-lg md:text-xl archivo-black text-[var(--text-main)]" id="uvIndex">--</span>
-                  </div>
-              </div>
-          </section>
-
-          <!-- Agro-Logic Widget -->
-          <section id="widget-agro" class="neo-box p-4 md:p-5 col-span-1 flex flex-col">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2 text-[var(--accent-1)]">
-                      <i data-lucide="leaf" class="w-4 h-4 md:w-5 md:h-5"></i>
-                      <span data-i18n="agro_logic">Agro-Logic</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="bg-[var(--bg-color)] p-3 md:p-4 rounded border-2 border-[var(--border-color)] flex-grow flex items-center">
-                  <p id="agroAdvice" class="leading-relaxed font-bold text-xs md:text-sm text-[var(--text-main)]" data-i18n="agro_waiting">
-                      Select a location and crop, then click ANALYZE to evaluate conditions.
-                  </p>
-              </div>
-          </section>
-
-          <!-- Logistics Widget -->
-          <section id="widget-logistics" class="neo-box p-4 md:p-5 flex flex-col col-span-1">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2 text-[var(--accent-2)]">
-                      <i data-lucide="truck" class="w-4 h-4 md:w-5 md:h-5"></i>
-                      <span data-i18n="logistics_engine">Logistics Engine</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="bg-[var(--bg-color)] p-3 md:p-4 rounded border-2 border-[var(--border-color)] flex-grow flex items-center">
-                  <p id="logisticsAdvice" class="leading-relaxed font-bold text-xs md:text-sm text-[var(--text-main)]" data-i18n="logistics_waiting">
-                      Awaiting weather data to calculate transit and storage impacts.
-                  </p>
-              </div>
-          </section>
-
-          <!-- Hourly Forecast Widget -->
-          <section id="widget-hourly" class="neo-box p-4 md:p-5 col-span-1 md:col-span-2">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2">
-                      <i data-lucide="clock" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-                      <span data-i18n="hourly_forecast">Hourly Forecast</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="overflow-x-auto pb-2 md:pb-4 custom-scrollbar">
-                  <div class="flex gap-2 md:gap-3 min-w-max" id="hourlyContainer">
-                      <!-- Populated via JS -->
-                  </div>
-              </div>
-          </section>
-
-          <!-- Map Widget -->
-          <section id="widget-map" class="neo-box p-4 md:p-5 flex flex-col h-[250px] md:h-[300px] col-span-1 md:col-span-2 lg:col-span-2">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2">
-                      <i data-lucide="map" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-                      <span data-i18n="live_area_map">Area Map</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="flex-grow w-full border-2 border-[var(--border-color)] rounded relative overflow-hidden bg-[var(--bg-color)]">
-                  <iframe id="mapIframe" class="w-full h-full absolute inset-0 mix-blend-luminosity opacity-70 pointer-events-none" src="about:blank" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
-                  <div id="mapOverlay" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-10 transition-opacity duration-300">
-                      <span class="bg-[var(--card-bg)] px-4 py-2 rounded border-2 border-[var(--border-color)] font-bold text-xs md:text-sm uppercase" data-i18n="awaiting_map">Loading Map...</span>
-                  </div>
-              </div>
-          </section>
-
-          <!-- 7-Day Forecast Widget -->
-          <section id="widget-7day" class="neo-box p-4 md:p-5 col-span-1 md:col-span-2 lg:col-span-3">
-              <div class="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3 drag-handle group">
-                  <h3 class="text-base md:text-lg archivo-black uppercase flex items-center gap-2">
-                      <i data-lucide="calendar-days" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>
-                      <span data-i18n="7_day_outlook">7-Day Outlook</span>
-                  </h3>
-                  <i data-lucide="grip-horizontal" class="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent-1)] transition-colors"></i>
-              </div>
-              <div class="overflow-x-auto pb-2 md:pb-4 custom-scrollbar">
-                  <div class="flex gap-2 md:gap-4 min-w-max justify-between" id="forecastContainer">
-                      <!-- Populated via JS -->
-                  </div>
-              </div>
-          </section>
-
-      </div>
-  </div>
-
-  <script>
-    // --- Application State ---
-    let LOCATIONS = ['Nairobi', 'Kuala Lumpur', 'Seoul', 'London', 'New York', 'Tokyo', 'Madrid'];
-    let currentLang = 'en';
-    let isCelsius = true; 
-    let lastWeatherData = null;
-
-    // --- Translations ---
-    const translations = {
-        en: {
-            info: "Info", close: "Close", guide_title: "WeClimate Settings", quick_settings: "Quick Settings", reset_layout: "Reset Layout",
-            guide_dashboard_title: "Mobile Drag & Drop", guide_dashboard_desc: "Every widget can be moved. Grab the grip icon (⋮⋮) to organize your workspace on both mobile and desktop.",
-            guide_theme_title: "Image-to-Theme Engine", guide_theme_desc: "Click the camera icon next to themes to upload any image. The AI will extract the dominant colors and create a custom theme instantly!",
-            guide_logistics_title: "Agro & Logistics", guide_logistics_desc: "Select a crop in controls. The engine will evaluate weather to provide farming advice and supply chain warnings.",
-            awaiting: "Awaiting Data", location: "Location", crop_focus: "Crop", wheat: "Wheat", corn: "Corn", rice: "Rice", soybeans: "Soybeans",
-            go: "ANALYZE", feels_like: "Feels Like", humidity: "Humidity", wind: "Wind", uv: "UV Max",
-            awaiting_map: "Loading Map...", search_placeholder: "Search City...", error_loc: "City not found!",
-            controls: "Controls", live_data: "Live Metrics", hourly_forecast: "Hourly Forecast", live_area_map: "Area Map", "7_day_outlook": "7-Day Outlook", agro_logic: "Agro-Logic", logistics_engine: "Logistics Engine",
-            agro_waiting: "Select a location and crop, then click ANALYZE to evaluate conditions.", logistics_waiting: "Awaiting weather data to calculate transit and storage impacts.",
-            today: "Today", use_fahrenheit: "Use Fahrenheit (°F)", use_celsius: "Use Celsius (°C)", location_denied: "Location access denied.", network_error: "Network Error. Check connection."
-        },
-        es: {
-            info: "Info", close: "Cerrar", guide_title: "Ajustes WeClimate", quick_settings: "Ajustes Rápidos", reset_layout: "Restablecer Diseño",
-            guide_dashboard_title: "Arrastrar y Soltar", guide_dashboard_desc: "Agarra el ícono superior para mover tarjetas en móvil o PC.", guide_theme_title: "Tema por Imagen", guide_theme_desc: "Sube una imagen y la IA creará un tema con sus colores.", guide_logistics_title: "Agro y Logística", guide_logistics_desc: "Analiza el clima para consejos agrícolas.",
-            awaiting: "Esperando...", location: "Ubicación", crop_focus: "Cultivo", wheat: "Trigo", corn: "Maíz", rice: "Arroz", soybeans: "Soja",
-            go: "ANALIZAR", feels_like: "Sensación", humidity: "Humedad", wind: "Viento", uv: "UV Máx",
-            awaiting_map: "Cargando Mapa...", search_placeholder: "Buscar ciudad...", error_loc: "¡No encontrada!",
-            controls: "Controles", live_data: "Métricas", hourly_forecast: "Por Hora", live_area_map: "Mapa", "7_day_outlook": "7 Días", agro_logic: "Agro-Lógica", logistics_engine: "Logística",
-            agro_waiting: "Seleccione ubicación y cultivo.", logistics_waiting: "Esperando datos logísticos.",
-            today: "Hoy", use_fahrenheit: "Usar Fahrenheit (°F)", use_celsius: "Usar Celsius (°C)", location_denied: "Acceso a ubicación denegado.", network_error: "Error de red. Verifica tu conexión."
-        },
-        fr: {
-            info: "Info", close: "Fermer", guide_title: "Paramètres WeClimate", quick_settings: "Paramètres Rapides", reset_layout: "Réinitialiser",
-            guide_dashboard_title: "Glisser-Déposer", guide_dashboard_desc: "Chaque widget peut être déplacé. Saisissez l'icône de poignée (⋮⋮) pour organiser votre espace.", guide_theme_title: "Thème par Image", guide_theme_desc: "Cliquez sur l'icône caméra pour télécharger une image. L'IA extraira les couleurs dominantes pour créer un thème.", guide_logistics_title: "Agro & Logistique", guide_logistics_desc: "Sélectionnez une culture. Le moteur évaluera la météo pour des conseils agricoles.",
-            awaiting: "En attente...", location: "Lieu", crop_focus: "Culture", wheat: "Blé", corn: "Maïs", rice: "Riz", soybeans: "Soja",
-            go: "ANALYSER", feels_like: "Ressenti", humidity: "Humidité", wind: "Vent", uv: "UV Max",
-            awaiting_map: "Chargement...", search_placeholder: "Chercher ville...", error_loc: "Ville non trouvée !",
-            controls: "Contrôles", live_data: "Données", hourly_forecast: "Par Heure", live_area_map: "Carte", "7_day_outlook": "7 Jours", agro_logic: "Agro-Logique", logistics_engine: "Logistique",
-            agro_waiting: "Sélectionnez un lieu et une culture, puis cliquez ANALYSER.", logistics_waiting: "En attente de données météo pour calculer les impacts.",
-            today: "Auj.", use_fahrenheit: "Utiliser Fahrenheit (°F)", use_celsius: "Utiliser Celsius (°C)", location_denied: "Accès à la localisation refusé.", network_error: "Erreur réseau. Vérifiez la connexion."
-        },
-        ja: {
-            info: "情報", close: "閉じる", guide_title: "WeClimate 設定", quick_settings: "クイック設定", reset_layout: "レイアウトリセット",
-            guide_dashboard_title: "ドラッグ＆ドロップ", guide_dashboard_desc: "すべてのウィジェットを移動できます。グリップアイコン(⋮⋮)を掴んでワークスペースを整理してください。", guide_theme_title: "画像テーマ", guide_theme_desc: "カメラアイコンをクリックして画像をアップロード。AIが主要な色を抽出してテーマを作成します。", guide_logistics_title: "農業＆物流", guide_logistics_desc: "作物を選択してください。天候を評価して農業アドバイスを提供します。",
-            awaiting: "データ待ち...", location: "場所", crop_focus: "作物", wheat: "小麦", corn: "トウモロコシ", rice: "米", soybeans: "大豆",
-            go: "分析", feels_like: "体感", humidity: "湿度", wind: "風速", uv: "UV最大",
-            awaiting_map: "地図読込中...", search_placeholder: "都市を検索...", error_loc: "都市が見つかりません！",
-            controls: "コントロール", live_data: "ライブデータ", hourly_forecast: "時間予報", live_area_map: "地図", "7_day_outlook": "7日間予報", agro_logic: "農業ロジック", logistics_engine: "物流エンジン",
-            agro_waiting: "場所と作物を選択し、分析をクリックしてください。", logistics_waiting: "天候データを待って輸送と保管の影響を計算します。",
-            today: "今日", use_fahrenheit: "華氏 (°F) に切替", use_celsius: "摂氏 (°C) に切替", location_denied: "位置情報へのアクセスが拒否されました。", network_error: "ネットワークエラー。接続を確認してください。"
-        },
-        ko: {
-            info: "정보", close: "닫기", guide_title: "WeClimate 설정", quick_settings: "빠른 설정", reset_layout: "레이아웃 초기화",
-            guide_dashboard_title: "드래그 앤 드롭", guide_dashboard_desc: "모든 위젯을 이동할 수 있습니다. 그립 아이콘(⋮⋮)을 잡아서 워크스페이스를 정리하세요.", guide_theme_title: "이미지 테마", guide_theme_desc: "카메라 아이콘을 클릭하여 이미지를 업로드하세요. AI가 주요 색상을 추출하여 테마를 만듭니다.", guide_logistics_title: "농업 & 물류", guide_logistics_desc: "작물을 선택하세요. 날씨를 평가하여 농업 조언을 제공합니다.",
-            awaiting: "데이터 대기중...", location: "위치", crop_focus: "작물", wheat: "밀", corn: "옥수수", rice: "쌀", soybeans: "대두",
-            go: "분석", feels_like: "체감", humidity: "습도", wind: "풍속", uv: "UV 최대",
-            awaiting_map: "지도 로딩...", search_placeholder: "도시 검색...", error_loc: "도시를 찾을 수 없습니다!",
-            controls: "컨트롤", live_data: "실시간 데이터", hourly_forecast: "시간별 예보", live_area_map: "지도", "7_day_outlook": "7일 전망", agro_logic: "농업 로직", logistics_engine: "물류 엔진",
-            agro_waiting: "위치와 작물을 선택하고 분석을 클릭하세요.", logistics_waiting: "날씨 데이터를 기다려 운송 및 보관 영향을 계산합니다.",
-            today: "오늘", use_fahrenheit: "화씨 (°F) 사용", use_celsius: "섭씨 (°C) 사용", location_denied: "위치 접근이 거부되었습니다.", network_error: "네트워크 오류. 연결을 확인하세요."
-        },
-        ms: {
-            info: "Info", close: "Tutup", guide_title: "Tetapan WeClimate", quick_settings: "Tetapan Pantas", reset_layout: "Set Semula",
-            guide_dashboard_title: "Seret & Lepas", guide_dashboard_desc: "Setiap widget boleh dipindahkan. Pegang ikon grip (⋮⋮) untuk menyusun ruang kerja anda.", guide_theme_title: "Tema Imej", guide_theme_desc: "Klik ikon kamera untuk memuat naik imej. AI akan mengekstrak warna dominan untuk mencipta tema.", guide_logistics_title: "Agro & Logistik", guide_logistics_desc: "Pilih tanaman. Enjin akan menilai cuaca untuk nasihat pertanian.",
-            awaiting: "Menunggu Data...", location: "Lokasi", crop_focus: "Tanaman", wheat: "Gandum", corn: "Jagung", rice: "Padi", soybeans: "Kacang Soya",
-            go: "ANALISIS", feels_like: "Rasa", humidity: "Kelembapan", wind: "Angin", uv: "UV Maks",
-            awaiting_map: "Memuatkan Peta...", search_placeholder: "Cari bandar...", error_loc: "Bandar tidak ditemui!",
-            controls: "Kawalan", live_data: "Data Langsung", hourly_forecast: "Ramalan Jam", live_area_map: "Peta", "7_day_outlook": "7 Hari", agro_logic: "Agro-Logik", logistics_engine: "Enjin Logistik",
-            agro_waiting: "Pilih lokasi dan tanaman, kemudian klik ANALISIS.", logistics_waiting: "Menunggu data cuaca untuk mengira kesan transit dan penyimpanan.",
-            today: "Hari ini", use_fahrenheit: "Guna Fahrenheit (°F)", use_celsius: "Guna Celsius (°C)", location_denied: "Akses lokasi ditolak.", network_error: "Ralat rangkaian. Semak sambungan."
-        },
-        sw: {
-            info: "Habari", close: "Funga", guide_title: "Mipangilio ya WeClimate", quick_settings: "Mipangilio ya Haraka", reset_layout: "Weka Upya",
-            guide_dashboard_title: "Buruta na Dondosha", guide_dashboard_desc: "Kila wijeti inaweza kusogezwa. Shika ikoni ya kushikilia (⋮⋮) kupanga nafasi yako.", guide_theme_title: "Mandhari ya Picha", guide_theme_desc: "Bofya ikoni ya kamera kupakia picha. AI itachota rangi kuu kuunda mandhari.", guide_logistics_title: "Kilimo na Usafirishaji", guide_logistics_desc: "Chagua zao. Injini itatathmini hali ya hewa kutoa ushauri wa kilimo.",
-            awaiting: "Kusubiri Data...", location: "Mahali", crop_focus: "Zao", wheat: "Ngano", corn: "Mahindi", rice: "Mchele", soybeans: "Soya",
-            go: "CHANGANUA", feels_like: "Hisi", humidity: "Unyevu", wind: "Upepo", uv: "UV Juu",
-            awaiting_map: "Kupakia Ramani...", search_placeholder: "Tafuta jiji...", error_loc: "Jiji halipatikani!",
-            controls: "Vidhibiti", live_data: "Data Moja kwa Moja", hourly_forecast: "Utabiri wa Saa", live_area_map: "Ramani", "7_day_outlook": "Siku 7", agro_logic: "Kilimo-Mantiki", logistics_engine: "Injini ya Usafirishaji",
-            agro_waiting: "Chagua mahali na zao, kisha bofya CHANGANUA kutathmini hali.", logistics_waiting: "Kusubiri data ya hali ya hewa kuhesabu athari za usafiri na uhifadhi.",
-            today: "Leo", use_fahrenheit: "Tumia Fahrenheit (°F)", use_celsius: "Tumia Celsius (°C)", location_denied: "Ufikiaji wa mahali umekataliwa.", network_error: "Hitilafu ya mtandao. Angalia muunganisho."
-        }
-    };
-
-    function t(key) { return translations[currentLang]?.[key] || translations['en'][key] || key; }
-
-    function applyTranslations() {
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if(el.tagName === 'INPUT') el.placeholder = t(key);
-            else el.textContent = t(key);
-        });
-        document.getElementById('searchInput').placeholder = t('search_placeholder');
-        document.getElementById('unitLabel').textContent = isCelsius ? t('use_fahrenheit') : t('use_celsius');
-    }
-
-    // --- DOM Elements ---
-    const locationSelect = document.getElementById('locationSelect');
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const cropSelect = document.getElementById('cropSelect');
-    const getAdviceBtn = document.getElementById('getAdviceBtn');
-    const langSelect = document.getElementById('languageSelect');
-    const themeSelect = document.getElementById('themeSelect');
-    const locateBtn = document.getElementById('locateBtn');
-    
-    // --- Utility Functions ---
-    function populateLocations() {
-        locationSelect.innerHTML = '';
-        LOCATIONS.forEach(loc => {
-            const opt = document.createElement('option');
-            opt.value = loc; opt.textContent = loc.toUpperCase();
-            locationSelect.appendChild(opt);
-        });
-    }
-
-    function showError(msg) {
-        const eb = document.getElementById('errorBox');
-        document.getElementById('errorMessage').textContent = msg;
-        eb.classList.remove('hidden');
-        setTimeout(() => eb.classList.add('hidden'), 4000);
-    }
-
-    function formatTemp(celsiusValue) {
-        if(isNaN(celsiusValue)) return '--';
-        if(isCelsius) return `${Math.round(celsiusValue)}°`;
-        return `${Math.round(celsiusValue * 9/5 + 32)}°`;
-    }
-
-    // --- Mobile/Desktop SortableJS (Drag & Drop) ---
-    function setupDragAndDrop() {
-        const grid = document.getElementById('widgetGrid');
-        
-        // Initialize SortableJS
-        new Sortable(grid, {
-            animation: 150,
-            handle: '.drag-handle',
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            onEnd: function () {
-                const order = Array.from(grid.children).map(w => w.id);
-                localStorage.setItem('weclimate_widget_order', JSON.stringify(order));
-            }
-        });
-
-        // Load saved order
-        try {
-            const savedOrder = JSON.parse(localStorage.getItem('weclimate_widget_order') || '[]');
-            if (savedOrder.length > 0) {
-                savedOrder.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) grid.appendChild(el);
-                });
-            }
-        } catch(e) { console.warn('Failed to restore widget order:', e); }
-    }
-
-    // Reset Layout Logic
-    document.getElementById('resetLayoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('weclimate_widget_order');
-        location.reload(); // Quickest way to snap HTML back to original order
-    });
-
-    // --- Image-to-Theme Engine ---
-    const imgThemeBtn = document.getElementById('imgThemeBtn');
-    const imageInput = document.getElementById('imageThemeInput');
-    const canvas = document.getElementById('colorCanvas');
-    const ctx = canvas.getContext('2d');
-
-    imgThemeBtn.addEventListener('click', () => imageInput.click());
-
-    imageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                // Draw to hidden canvas to read pixels
-                canvas.width = 64; canvas.height = 64; // Scale down for speed
-                ctx.drawImage(img, 0, 0, 64, 64);
-                extractThemeFromCanvas();
-                themeSelect.value = "custom"; // Select custom option
-                localStorage.setItem('weclimate_theme', 'custom');
-            };
-            img.src = event.target.result;
-            // Save base64 to local storage to persist theme
-            try { localStorage.setItem('weclimate_custom_img', event.target.result); } catch(err) { console.warn("Image too large for LocalStorage"); }
-        };
-        reader.readAsDataURL(file);
-    });
-
-    function rgbToHsl(r, g, b) {
-        r /= 255; g /= 255; b /= 255;
-        let max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-        if(max == min) { h = s = 0; }
-        else {
-            let d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch(max){
-                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                case g: h = (b - r) / d + 2; break;
-                case b: h = (r - g) / d + 4; break;
-            }
-            h /= 6;
-        }
-        return [h * 360, s * 100, l * 100];
-    }
-
-    function extractThemeFromCanvas() {
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let r=0, g=0, b=0, count=0;
-        
-        // Simple Average Color extraction
-        for(let i=0; i<imgData.length; i+=16) { // Sample every 4th pixel
-            r += imgData[i]; g += imgData[i+1]; b += imgData[i+2]; count++;
-        }
-        r = Math.floor(r/count); g = Math.floor(g/count); b = Math.floor(b/count);
-
-        const [h, s, l] = rgbToHsl(r, g, b);
-        
-        // Generate a cohesive palette
-        const isDark = l < 50;
-        const bgL = isDark ? Math.max(l - 10, 5) : Math.min(l + 10, 95);
-        const cardL = isDark ? Math.min(l + 5, 20) : Math.max(l - 5, 80);
-        const textHex = isDark ? '#f8fafc' : '#0f172a';
-        const mutedHex = isDark ? '#94a3b8' : '#475569';
-        const borderHex = isDark ? `hsl(${h}, ${s}%, ${cardL + 15}%)` : `hsl(${h}, ${s}%, ${cardL - 15}%)`;
-        
-        // Complementary accent
-        const accH = (h + 180) % 360;
-
-        const root = document.documentElement;
-        root.setAttribute('data-theme', 'custom');
-        root.style.setProperty('--bg-color', `hsl(${h}, ${s}%, ${bgL}%)`);
-        root.style.setProperty('--card-bg', `hsl(${h}, ${s}%, ${cardL}%)`);
-        root.style.setProperty('--text-main', textHex);
-        root.style.setProperty('--text-muted', mutedHex);
-        root.style.setProperty('--border-color', borderHex);
-        root.style.setProperty('--shadow-color', isDark ? '#000' : `hsl(${h}, ${s}%, ${bgL - 20}%)`);
-        root.style.setProperty('--accent-1', `hsl(${accH}, ${Math.max(s, 60)}%, 50%)`);
-        root.style.setProperty('--accent-2', `hsl(${(accH + 45)%360}, ${Math.max(s, 60)}%, 50%)`);
-    }
-
-    themeSelect.addEventListener('change', (e) => {
-        const val = e.target.value;
-        if(val !== 'custom') {
-            document.documentElement.style = ''; // Clear inline styles
-            document.documentElement.setAttribute('data-theme', val);
-        } else {
-            // Re-apply saved custom theme if exists
-            const savedImg = localStorage.getItem('weclimate_custom_img');
-            if(savedImg) {
-                const img = new Image();
-                img.onload = () => {
-                    canvas.width = 64; canvas.height = 64;
-                    ctx.drawImage(img, 0, 0, 64, 64);
-                    extractThemeFromCanvas();
-                };
-                img.src = savedImg;
-            }
-        }
-        localStorage.setItem('weclimate_theme', val);
-    });
-
-    // --- Weather Logic ---
-    function getWeatherIcon(code) {
-        if (code === 0) return 'sun'; 
-        if (code >= 1 && code <= 3) return 'cloud-sun'; 
-        if (code >= 45 && code <= 48) return 'cloud-fog'; 
-        if (code >= 51 && code <= 67) return 'cloud-rain'; 
-        if (code >= 71 && code <= 77) return 'snowflake'; 
-        if (code >= 80 && code <= 82) return 'cloud-showers-heavy'; 
-        if (code >= 95) return 'cloud-lightning'; 
-        return 'cloud';
-    }
-
-    function getWeatherDesc(code) {
-        if (code === 0) return 'Clear Sky';
-        if (code >= 1 && code <= 3) return 'Partly Cloudy';
-        if (code >= 45 && code <= 48) return 'Foggy';
-        if (code >= 51 && code <= 67) return 'Rainy';
-        if (code >= 71 && code <= 77) return 'Snowy';
-        if (code >= 80 && code <= 82) return 'Showers';
-        if (code >= 95) return 'Thunderstorm';
-        return 'Unknown';
-    }
-
-    function handleInput(v) {
-        if(!v) return;
-        const found = LOCATIONS.find(l => l.toLowerCase().includes(v.toLowerCase()));
-        if(found){ locationSelect.value = found; } 
-        else {
-            const opt = document.createElement('option');
-            opt.value = v; opt.textContent = v.toUpperCase(); 
-            locationSelect.appendChild(opt);
-            locationSelect.value = v;
-            if(!LOCATIONS.includes(v)) LOCATIONS.push(v);
-        }
-        fetchWeather(locationSelect.value);
-    }
-
-    function updateAdvice(tempC, condition, crop) {
-        const agroEl = document.getElementById('agroAdvice');
-        const logiEl = document.getElementById('logisticsAdvice');
-        let agro = "", logi = "";
-        const cropName = t(crop).toUpperCase();
-
-        if (tempC > 32) {
-            agro = `HIGH HEAT ALERT: ${cropName} risks heat stress. Increase irrigation immediately.`;
-            logi = `Requires refrigerated transport to prevent rapid spoilage.`;
-        } else if (tempC < 10) {
-            agro = `FROST WARNING: ${cropName} growth stalling. Deploy thermal blankets.`;
-            logi = `Monitor transit routes for ice. Protect cargo from freezing.`;
-        } else {
-            agro = `OPTIMAL CONDITIONS: ${cropName} yield potential is high.`;
-            logi = `Standard logistics procedures recommended. No temp delays anticipated.`;
-        }
-        
-        const cLow = condition.toLowerCase();
-        if (cLow.includes("rain") || cLow.includes("showers") || cLow.includes("thunder")) {
-             agro += ` Heavy moisture. Delay harvesting to prevent rot.`;
-             logi += ` Route delays possible (Wet roads). Waterproof cargo.`;
-        } else if (cLow.includes("snow")) {
-             agro += ` Snow cover detected. Assess structure damage.`;
-             logi += ` Severe transit delays. Reroute away from snow.`;
-        }
-
-        agroEl.textContent = agro;
-        logiEl.textContent = logi;
-    }
-
-    async function fetchWeather(city) {
-        try {
-            document.getElementById('heroLocationName').textContent = 'Loading...';
-            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
-            const geoData = await geoRes.json();
-
-            if(!geoData.results || geoData.results.length === 0) {
-                showError(t('error_loc'));
-                document.getElementById('heroLocationName').textContent = 'Error';
-                return;
-            }
-            const { latitude, longitude, name } = geoData.results[0];
-
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,uv_index_max&timezone=auto`;
-            const weatherRes = await fetch(url);
-            lastWeatherData = await weatherRes.json();
-
-            // Save last searched city
-            localStorage.setItem('weclimate_last_city', name);
-            renderWeather(lastWeatherData, name, latitude, longitude);
-        } catch (error) {
-            showError(t('network_error'));
-            console.warn('fetchWeather error:', error);
-        }
-    }
-
-    async function fetchWeatherByCoords(lat, lon, displayName) {
-        try {
-            document.getElementById('heroLocationName').textContent = 'Loading...';
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,uv_index_max&timezone=auto`;
-            const weatherRes = await fetch(url);
-            lastWeatherData = await weatherRes.json();
-            localStorage.setItem('weclimate_last_city', displayName);
-            renderWeather(lastWeatherData, displayName, lat, lon);
-        } catch (error) {
-            showError(t('network_error'));
-            console.warn('fetchWeatherByCoords error:', error);
-        }
-    }
-
-    function renderWeather(data, cityName, lat, lon) {
-        if(!data) return;
-        const hCont = document.getElementById('hourlyContainer');
-        const fCont = document.getElementById('forecastContainer');
-        hCont.innerHTML = ''; fCont.innerHTML = '';
-
-        const tempC = data.current.temperature_2m;
-        document.getElementById('currentTemp').textContent = formatTemp(tempC);
-        
-        const condDesc = getWeatherDesc(data.current.weather_code);
-        document.getElementById('currentCondition').textContent = condDesc;
-        document.getElementById('heroLocationName').textContent = cityName.toUpperCase();
-        document.getElementById('heroIconContainer').innerHTML = `<i data-lucide="${getWeatherIcon(data.current.weather_code)}" class="w-full h-full"></i>`;
-
-        document.getElementById('feelsLike').textContent = formatTemp(data.current.apparent_temperature);
-        document.getElementById('humidity').textContent = `${data.current.relative_humidity_2m}%`;
-        
-        // Speed conversion based on unit selection
-        const speedKmh = data.current.wind_speed_10m;
-        document.getElementById('windSpeed').textContent = isCelsius ? `${speedKmh} km/h` : `${Math.round(speedKmh * 0.621371)} mph`;
-        
-        document.getElementById('uvIndex').textContent = data.daily.uv_index_max?.[0] ?? '--';
-        
-        // Map Update
-        const offset = 0.05;
-        document.getElementById('mapIframe').src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-offset},${lat-offset},${lon+offset},${lat+offset}&layer=mapnik&marker=${lat},${lon}`;
-        setTimeout(() => document.getElementById('mapOverlay').style.display = 'none', 500);
-
-        // Hourly
-        const nowMs = Date.now();
-        for(let i=0, count=0; i<48 && count<24; i++) {
-            if(!data.hourly.time[i]) continue;
-            const timeObj = new Date(data.hourly.time[i]);
-            if(timeObj.getTime() < nowMs - 3600000) continue; 
-            
-            const div = document.createElement('div');
-            div.className = "bg-[var(--bg-color)] p-3 w-20 md:w-24 rounded border-2 border-[var(--border-color)] flex flex-col items-center gap-1 md:gap-2 flex-shrink-0";
-            div.innerHTML = `
-                <span class="font-bold text-[10px] md:text-xs text-[var(--text-muted)]">${timeObj.toLocaleTimeString(currentLang, {hour:'2-digit', minute:'2-digit'})}</span>
-                <i data-lucide="${getWeatherIcon(data.hourly.weather_code[i])}" class="w-6 h-6 md:w-8 md:h-8 text-[var(--text-main)]"></i>
-                <span class="archivo-black text-sm md:text-lg text-[var(--text-main)]">${formatTemp(data.hourly.temperature_2m[i])}</span>
-            `;
-            hCont.appendChild(div);
-            count++;
-        }
-
-        // Daily
-        for(let i=0; i<7; i++) {
-            const date = new Date(data.daily.time[i]);
-            let dayName = i===0 ? t('today') : date.toLocaleDateString(currentLang, {weekday: 'short'});
-            
-            const div = document.createElement('div');
-            div.className = "bg-[var(--bg-color)] p-3 w-24 md:w-28 rounded border-2 border-[var(--border-color)] flex flex-col items-center gap-2 md:gap-3 flex-shrink-0";
-            div.innerHTML = `
-                <span class="font-bold uppercase text-[10px] md:text-xs text-[var(--text-muted)]">${dayName}</span>
-                <i data-lucide="${getWeatherIcon(data.daily.weather_code[i])}" class="w-8 h-8 md:w-10 md:h-10 text-[var(--accent-1)]"></i>
-                <span class="archivo-black text-lg md:text-xl text-[var(--text-main)]">${formatTemp(data.daily.temperature_2m_max[i])}</span>
-            `;
-            fCont.appendChild(div);
-        }
-
-        updateAdvice(tempC, condDesc, cropSelect.value);
+    <!-- Scripts -->
+    <script>
         lucide.createIcons();
-    }
 
-    // --- Events ---
-    document.getElementById('toggleUnitBtn').addEventListener('click', () => {
-        isCelsius = !isCelsius;
-        localStorage.setItem('weclimate_unit', isCelsius ? 'C' : 'F');
-        applyTranslations();
-        if(lastWeatherData && document.getElementById('heroLocationName').textContent !== '--') {
-            // Re-render immediately using cached data to update numbers
-            const lat = lastWeatherData.latitude; const lon = lastWeatherData.longitude;
-            renderWeather(lastWeatherData, document.getElementById('heroLocationName').textContent, lat, lon);
-        }
-    });
+        /* ==========================================
+           1. CHART.JS: ADVANCED METEOGRAM
+           ========================================== */
+        let meteogramChart;
+        function initChart() {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const a1 = rootStyle.getPropertyValue('--accent-1').trim() || '#4ade80';
+            const a2 = rootStyle.getPropertyValue('--accent-2').trim() || '#818cf8';
+            const border = rootStyle.getPropertyValue('--border-color').trim() || '#333333';
+            const textMain = rootStyle.getPropertyValue('--text-main').trim() || '#e0e0e0';
 
-    langSelect.addEventListener('change', (e) => {
-        currentLang = e.target.value; localStorage.setItem('weclimate_lang', currentLang);
-        applyTranslations();
-        if(lastWeatherData) {
-            const lat = lastWeatherData.latitude; const lon = lastWeatherData.longitude;
-            renderWeather(lastWeatherData, document.getElementById('heroLocationName').textContent, lat, lon);
-        }
-    });
+            const ctx = document.getElementById('meteogram').getContext('2d');
+            
+            // Destroy existing chart if updating theme
+            if(meteogramChart) meteogramChart.destroy();
 
-    getAdviceBtn.addEventListener('click', () => {
-        if(locationSelect.value) {
-            fetchWeather(locationSelect.value);
-            localStorage.setItem('weclimate_crop', cropSelect.value);
-        }
-    });
+            // Mock Data (Hourly)
+            const labels = ['00:00','03:00','06:00','09:00','12:00','15:00','18:00','21:00'];
+            const temps = [18, 17, 16, 22, 28, 29, 25, 20];
+            const precip = [0, 5, 12, 2, 0, 0, 0, 0];
+            const wind = [10, 12, 15, 25, 35, 45, 30, 20];
 
-    searchBtn.addEventListener('click', () => handleInput(searchInput.value.trim()));
-    searchInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleInput(searchInput.value.trim()); });
+            Chart.defaults.font.family = "'Space Mono', monospace";
+            Chart.defaults.color = textMain;
 
-    cropSelect.addEventListener('change', () => { 
-        localStorage.setItem('weclimate_crop', cropSelect.value);
-        if(lastWeatherData) updateAdvice(lastWeatherData.current.temperature_2m, document.getElementById('currentCondition').textContent, cropSelect.value);
-    });
-
-    locateBtn.addEventListener('click', () => {
-        if (navigator.geolocation) {
-            locateBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 md:w-5 md:h-5 animate-spin"></i>`;
-            lucide.createIcons();
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                    const data = await res.json();
-                    handleInput(data.address.city || data.address.town || data.address.village || 'Local Area');
-                } catch(e) { fetchWeatherByCoords(lat, lon, 'Local Area'); } // Fallback
-                locateBtn.innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>`; lucide.createIcons();
-            }, () => {
-                showError(t('location_denied'));
-                locateBtn.innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 md:w-5 md:h-5 text-[var(--accent-1)]"></i>`; lucide.createIcons();
+            meteogramChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            data: temps,
+                            borderColor: a1,
+                            backgroundColor: a1,
+                            borderWidth: 3,
+                            tension: 0, // Brutalist straight lines
+                            yAxisID: 'y',
+                            pointRadius: 4,
+                            pointBackgroundColor: '#121212',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Wind Speed (km/h)',
+                            data: wind,
+                            borderColor: a2,
+                            backgroundColor: a2,
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0,
+                            yAxisID: 'y',
+                            pointRadius: 0
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Precipitation (mm)',
+                            data: precip,
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { weight: 'bold' } } },
+                        tooltip: {
+                            backgroundColor: '#1e1e1e',
+                            titleFont: { family: 'Archivo Black', size: 14 },
+                            bodyFont: { family: 'Space Mono', size: 12 },
+                            borderColor: border,
+                            borderWidth: 2,
+                            padding: 10,
+                            cornerRadius: 0
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: border, tickLength: 0 } },
+                        y: { 
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: 'Temp / Wind' },
+                            grid: { color: border }
+                        },
+                        y1: { 
+                            type: 'linear', display: true, position: 'right',
+                            title: { display: true, text: 'Precipitation' },
+                            grid: { drawOnChartArea: false },
+                            min: 0, max: 20
+                        }
+                    }
+                }
             });
         }
-    });
 
-    // --- Init ---
-    (function init() {
-        populateLocations();
-        lucide.createIcons();
-        setupDragAndDrop();
-        
-        try { 
-            const tPref = localStorage.getItem('weclimate_theme');
-            if(tPref) {
-                themeSelect.value = tPref;
-                if(tPref === 'custom') {
-                    const savedImg = localStorage.getItem('weclimate_custom_img');
-                    if(savedImg) {
-                        const img = new Image();
-                        img.onload = () => { canvas.width = 64; canvas.height = 64; ctx.drawImage(img, 0, 0, 64, 64); extractThemeFromCanvas(); };
-                        img.src = savedImg;
-                    }
-                } else { document.documentElement.setAttribute('data-theme', tPref); }
-            }
+        /* ==========================================
+           2. LEAFLET MAP: REGIONAL LAYERS
+           ========================================== */
+        let map;
+        let radarCircle;
+        let windLines = [];
 
-            const cPref = localStorage.getItem('weclimate_crop'); 
-            if(cPref && [...cropSelect.options].some(o => o.value === cPref)) cropSelect.value = cPref;
+        function initMap() {
+            // Center around typical logistic hub (e.g. Nairobi/Equator concept)
+            map = L.map('map', { zoomControl: false }).setView([-1.2921, 36.8219], 7);
             
-            const lPref = localStorage.getItem('weclimate_lang');
-            if(lPref) { langSelect.value = lPref; currentLang = lPref; }
+            // Standard tile layer - CSS filter makes it dark/brutalist
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-            const uPref = localStorage.getItem('weclimate_unit');
-            if(uPref === 'F') isCelsius = false;
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            const lastCity = localStorage.getItem('weclimate_last_city');
-            if(lastCity && !LOCATIONS.includes(lastCity)) {
-                const opt = document.createElement('option');
-                opt.value = lastCity; opt.textContent = lastCity.toUpperCase();
-                locationSelect.appendChild(opt);
+            // Mock Precipitation Layer (Red/Blue gradient overlay)
+            radarCircle = L.circle([-1.0, 37.0], {
+                color: 'blue',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.4,
+                radius: 80000
+            }).addTo(map);
+
+            // Mock Wind Layer (Polylines)
+            const windPaths = [
+                [[-1.5, 36.0], [-1.2, 36.8]],
+                [[-1.8, 36.2], [-1.0, 37.5]],
+                [[-0.5, 36.5], [0.2, 37.8]]
+            ];
+            windPaths.forEach(path => {
+                const line = L.polyline(path, {color: 'var(--accent-2)', weight: 3, dashArray: '5, 10'}).addTo(map);
+                windLines.push(line);
+                map.removeLayer(line); // hidden by default
+            });
+        }
+
+        function toggleMapLayer(layerType) {
+            const btnPrecip = document.getElementById('btn-precip');
+            const btnWind = document.getElementById('btn-wind');
+
+            if (layerType === 'precip') {
+                if(map.hasLayer(radarCircle)) {
+                    map.removeLayer(radarCircle);
+                    btnPrecip.classList.replace('bg-[var(--accent-2)]', 'neo-btn-secondary');
+                    btnPrecip.classList.replace('text-white', 'text-[var(--text-main)]');
+                } else {
+                    map.addLayer(radarCircle);
+                    btnPrecip.classList.replace('neo-btn-secondary', 'bg-[var(--accent-2)]');
+                    btnPrecip.classList.replace('text-[var(--text-main)]', 'text-white');
+                }
+            } else if (layerType === 'wind') {
+                if(map.hasLayer(windLines[0])) {
+                    windLines.forEach(l => map.removeLayer(l));
+                    btnWind.classList.replace('bg-[var(--accent-2)]', 'neo-btn-secondary');
+                    btnWind.classList.replace('text-white', 'text-[var(--text-main)]');
+                } else {
+                    windLines.forEach(l => map.addLayer(l));
+                    btnWind.classList.replace('neo-btn-secondary', 'bg-[var(--accent-2)]');
+                    btnWind.classList.replace('text-[var(--text-main)]', 'text-white');
+                }
             }
-            if(lastCity) locationSelect.value = lastCity;
+        }
 
-        } catch(e) { console.warn('Failed to restore preferences:', e); }
-        
-        applyTranslations();
-        fetchWeather(locationSelect.value);
-    })();
-  </script>
+        /* ==========================================
+           3. THEME CREATOR 2.0 (Image -> Colors)
+           ========================================== */
+        let baseExtractedColors = { a1: {h:0,s:0,l:0}, a2: {h:0,s:0,l:0} };
+
+        function toggleThemeModal() {
+            const modal = document.getElementById('theme-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Color Math Utilities
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } 
+            else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+        }
+
+        function hslToStr(h, s, l) { return `hsl(${h}, ${s}%, ${l}%)`; }
+
+        // Handle Image Upload & Extraction
+        document.getElementById('image-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    extractColors(img);
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function extractColors(img) {
+            const canvas = document.getElementById('theme-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 50; // Scale down for performance
+            canvas.height = 50;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let highestVibrancy = 0;
+            let bestR1=0, bestG1=0, bestB1=0;
+            
+            let bestR2=0, bestG2=0, bestB2=0;
+
+            // Simple brute force to find most vibrant colors
+            for (let i = 0; i < imageData.length; i += 16) {
+                const r = imageData[i], g = imageData[i+1], b = imageData[i+2];
+                const hsl = rgbToHsl(r, g, b);
+                
+                // Avoid blacks/whites/grays
+                if (hsl.l > 20 && hsl.l < 80 && hsl.s > 30) {
+                    const vibrancy = hsl.s * (100 - Math.abs(50 - hsl.l)); 
+                    if (vibrancy > highestVibrancy) {
+                        highestVibrancy = vibrancy;
+                        bestR1 = r; bestG1 = g; bestB1 = b;
+                    }
+                }
+            }
+
+            // Find secondary (complementary or second best)
+            const primaryHsl = rgbToHsl(bestR1, bestG1, bestB1);
+            baseExtractedColors.a1 = primaryHsl;
+            
+            // Secondary is complementary hue
+            baseExtractedColors.a2 = {
+                h: (primaryHsl.h + 180) % 360,
+                s: Math.max(primaryHsl.s - 10, 50),
+                l: primaryHsl.l
+            };
+
+            // Enable UI
+            document.getElementById('sliders-container').classList.remove('opacity-50', 'pointer-events-none');
+            const applyBtn = document.getElementById('btn-apply-theme');
+            applyBtn.classList.remove('opacity-50', 'pointer-events-none');
+            applyBtn.innerText = "Apply Engine Theme";
+            
+            // Reset Sliders
+            document.getElementById('sat-slider').value = 100;
+            document.getElementById('bri-slider').value = 100;
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const satMod = parseInt(document.getElementById('sat-slider').value) / 100;
+            const briMod = parseInt(document.getElementById('bri-slider').value) / 100;
+
+            document.getElementById('sat-val').innerText = `${Math.round(satMod * 100)}%`;
+            document.getElementById('bri-val').innerText = `${Math.round(briMod * 100)}%`;
+
+            const calcHsl = (base) => {
+                return hslToStr(base.h, Math.min(base.s * satMod, 100), Math.min(base.l * briMod, 100));
+            };
+
+            const previewBox = document.getElementById('theme-preview-box');
+            previewBox.style.setProperty('--preview-accent1', calcHsl(baseExtractedColors.a1));
+            previewBox.style.setProperty('--preview-accent2', calcHsl(baseExtractedColors.a2));
+        }
+
+        // Listeners for Sliders
+        document.getElementById('sat-slider').addEventListener('input', updatePreview);
+        document.getElementById('bri-slider').addEventListener('input', updatePreview);
+
+        function applyTheme() {
+            const satMod = parseInt(document.getElementById('sat-slider').value) / 100;
+            const briMod = parseInt(document.getElementById('bri-slider').value) / 100;
+
+            const calcHsl = (base) => hslToStr(base.h, Math.min(base.s * satMod, 100), Math.min(base.l * briMod, 100));
+
+            const root = document.documentElement;
+            root.style.setProperty('--accent-1', calcHsl(baseExtractedColors.a1));
+            root.style.setProperty('--accent-2', calcHsl(baseExtractedColors.a2));
+
+            // Update chart colors
+            initChart();
+            
+            toggleThemeModal();
+        }
+
+        /* ==========================================
+           4. EXPORT ENGINE
+           ========================================== */
+        function exportReport() {
+            const date = new Date().toLocaleString();
+            const reportContent = `
+=============================================
+             WeAI SYSTEM REPORT
+=============================================
+Generated: ${date}
+
+[ AGRO-LOGIC EXPANSION ]
+> Growing Degree Days (GDD): 1,240 (Optimal)
+  Stage: Flowering
+> Pest & Disease Risk: Fungal Blight (72%)
+  Alert: Elevated humidity and current temp range creates high-risk vector.
+
+[ LOGISTICS ENGINE PRO ]
+> Cold Chain Thresholds: Route 4 (Vaccine)
+  STATUS: ALERT / CRITICAL
+  Detail: Ambient temp (29°C) exceeds safe limits (2-8°C).
+> Route Risk Analysis: Highway A104
+  STATUS: WARNING
+  Detail: High wind warnings (45km/h). Tip-over risk for light-loads.
+
+[ WEATHER OVERVIEW (NEXT 24H) ]
+Peak Temp: 29°C (15:00)
+Max Wind: 45 km/h
+Precipitation: Expected 12mm peak at 06:00
+
+=============================================
+END OF REPORT
+            `.trim();
+
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `WeAI_Report_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            initMap();
+        });
+    </script>
 </body>
 </html>
