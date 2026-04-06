@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>WeAI: Weather & Environment</title>
+    <meta name="theme-color" content="#121212">
+
+    <link rel="manifest" href='data:application/manifest+json;utf8,{"name":"WeAI Pro","short_name":"WeAI","start_url":".","display":"standalone","background_color":"#121212","theme_color":"#4ade80","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGFkZTgwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJ2MjBMMiAxMmwxMC0xMHoiLz48L3N2Zz4=","sizes":"192x192","type":"image/svg+xml"}]}'>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #9ca3af;
+            --border-color: #333333;
+            --shadow-color: #000000;
+            --accent-1: #4ade80; 
+            --accent-1-text: #121212; 
+            --accent-2: #818cf8; 
+            --accent-2-text: #121212;
+            --accent-error: #ef4444; 
+            --accent-warn: #eab308; 
+            --map-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+
+        body {
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            font-family: 'Space Mono', monospace;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.4s, color 0.4s;
+            @media (min-width: 768px) {
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+        }
+
+        h1, h2, h3, .archivo-black { font-family: 'Archivo Black', sans-serif; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); }
+
+        .neo-box {
+            background-color: var(--card-bg);
+            border: 4px solid var(--border-color);
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s;
+        }
+
+        .neo-btn {
+            background-color: var(--accent-1); 
+            color: var(--accent-1-text);
+            border: 3px solid var(--border-color); 
+            box-shadow: 3px 3px 0 0 var(--shadow-color);
+            transition: all 0.2s; 
+            font-weight: bold; 
+            cursor: pointer;
+            text-transform: uppercase;
+            font-family: 'Archivo Black', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .neo-btn:active { box-shadow: 0 0 0 0 var(--shadow-color); transform: translate(3px, 3px); }
+
+        .neo-input {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            border: 3px solid var(--border-color);
+            padding: 0.5rem;
+            width: 100%;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.4s;
+        }
+        .neo-input:focus { border-color: var(--accent-1); }
+
+        .text-gradient {
+            background: linear-gradient(to right, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 3px solid var(--border-color);
+            background-color: var(--bg-color);
+            transition: all 0.4s;
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .drag-handle:active { cursor: grabbing; color: var(--accent-1); }
+
+        .widget-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 0.75rem;
+            position: relative;
+        }
+
+        .leaflet-layer, .leaflet-control-zoom { filter: var(--map-filter); transition: filter 0.4s; }
+
+        /* Unified Grid System for Desktop/Mobile */
+        #dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-auto-rows: minmax(280px, auto);
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            #dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-auto-rows: minmax(0, 1fr); /* Forces equal row heights on desktop */
+            }
+        }
+        @media (min-width: 1024px) {
+            #dashboard-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); opacity: 1; }
+            100% { transform: translateY(200%); opacity: 0; }
+        }
+        .analyzing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(var(--bg-color), 0.7);
+            z-index: 10;
+            display: none;
+            overflow: hidden;
+            backdrop-filter: blur(2px);
+        }
+        .analyzing-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 30%;
+            background: linear-gradient(to bottom, transparent, var(--accent-1), transparent);
+            animation: scanline 1.2s linear infinite;
+            opacity: 0.5;
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px;
+            background: var(--accent-1); border: 2px solid var(--bg-color);
+            cursor: pointer; margin-top: -6px; box-shadow: 2px 2px 0 0 var(--shadow-color);
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: var(--border-color); }
+        
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
+        #theme-preview-box {
+            --preview-bg: var(--card-bg); --preview-border: var(--border-color);
+            --preview-a1: var(--accent-1); --preview-a1-text: var(--accent-1-text);
+        }
+
+        .widget-item.hidden { display: none !important; }
+        .hero-metric.hidden { display: none !important; }
+        
+        .preset-btn {
+            background: var(--bg-color); border: 2px solid var(--border-color);
+            color: var(--text-main); font-family: 'Archivo Black', sans-serif;
+            text-transform: uppercase; cursor: pointer; padding: 0.5rem; transition: all 0.2s;
+            font-size: 0.7rem;
+        }
+        .preset-btn:hover { border-color: var(--accent-1); }
+
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        
+        #autocomplete-results {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .autofill-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+        .autofill-item:hover { background-color: var(--accent-1); color: var(--accent-1-text); }
+        .autofill-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <header class="neo-box mx-2 mt-2 md:mx-4 md:mt-4 p-4 flex flex-col gap-4 relative z-20 shrink-0">
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl md:text-4xl archivo-black text-gradient leading-none tracking-tighter">WeAI</h1>
+            <div class="flex items-center gap-2">
+                <button onclick="openSettings()" class="neo-btn bg-[var(--card-bg)] text-[var(--text-main)] px-3 py-1.5 text-xs border-[var(--border-color)] shadow-none">
+                    <i data-lucide="settings" class="w-4 h-4"></i> <span class="hidden sm:inline">Settings</span>
+                </button>
+                <button onclick="toggleThemeModal()" class="neo-btn bg-[var(--accent-2)] text-[var(--accent-2-text)] px-3 py-1.5 text-xs border-[var(--border-color)]">
+                    <i data-lucide="palette" class="w-4 h-4"></i> <span class="hidden sm:inline">Theme</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 max-w-3xl mx-auto w-full relative z-30">
+            <div class="relative flex-1">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search" class="w-4 h-4 text-[var(--text-muted)]"></i>
+                </div>
+                <input type="text" class="neo-input pl-10 h-12 text-lg font-bold" id="location-input" placeholder="Search city, farm, or location..." autocomplete="off">
+                <div id="autocomplete-results" class="absolute w-full bg-[var(--card-bg)] border-[var(--border-color)] border-4 border-t-0 hidden shadow-[6px_6px_0_0_var(--shadow-color)] mt-1"></div>
+            </div>
+            <select class="neo-input h-12 w-full sm:w-auto font-bold cursor-pointer" id="org-preset" onchange="applyPresetOrg()">
+                <option value="" disabled selected>Presets</option>
+                <option value="51.5074,-0.1278">London, UK</option>
+                <option value="40.7128,-74.0060">New York, USA</option>
+                <option value="-33.8688,151.2093">Sydney, AU</option>
+                <option value="35.6762,139.6503">Tokyo, JP</option>
+                <option value="-1.2921,36.8219">Nairobi Farm Hub</option>
+                <option value="36.7783,-119.4179">California Central Valley</option>
+            </select>
+        </div>
+
+        <div class="text-center pt-2 pb-4 relative">
+            <div class="analyzing-overlay rounded" id="hero-overlay"><span class="text-[var(--accent-1)] font-bold animate-pulse">UPDATING ATMOSPHERE...</span></div>
+            <h2 id="hero-location" class="text-2xl md:text-3xl archivo-black text-[var(--text-main)]">--</h2>
+            <div id="hero-temp" class="text-7xl md:text-8xl archivo-black my-2 text-[var(--text-main)] tracking-tighter">--°</div>
+            <div id="hero-condition" class="text-xl md:text-2xl font-bold text-[var(--accent-1)] uppercase">--</div>
+            
+            <div class="flex flex-wrap justify-center gap-3 md:gap-6 mt-4 text-xs md:text-sm font-bold tracking-widest text-[var(--text-muted)] uppercase" id="hero-extras">
+                <span class="hero-metric flex items-center gap-1" id="hm-highlow"><i data-lucide="thermometer" class="w-4 h-4"></i> <span id="hero-hl-val">H:--° L:--°</span></span>
+                <span class="hero-metric flex items-center gap-1 hidden" id="hm-wind"><i data-lucide="wind" class="w-4 h-4"></i> <span id="hero-wind-val">-- km/h</span></span>
+                <span class="hero-metric flex items-center gap-1 hidden" id="hm-hum"><i data-lucide="droplets" class="w-4 h-4"></i> <span id="hero-hum-val">--%</span></span>
+                <span class="hero-metric flex items-center gap-1 hidden" id="hm-uv"><i data-lucide="sun" class="w-4 h-4"></i> UV: <span id="hero-uv-val">--</span></span>
+                <span class="hero-metric flex items-center gap-1 hidden" id="hm-precip"><i data-lucide="cloud-rain" class="w-4 h-4"></i> <span id="hero-precip-val">-- mm</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main id="dashboard-grid" class="flex-1 p-2 md:p-4 overflow-y-auto min-h-0">
+        
+        <section class="neo-box widget-item data-widget" data-id="metrics" id="widget-metrics">
+            <div class="widget-header">
+                <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-[var(--accent-2)]"></i> Current Conditions</h2>
+                <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('metrics')"></i>
+                    <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
+                    <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('metrics', false)"></i>
+                </div>
+            </div>
+            <div class="widget-body grid grid-cols-2 gap-2 relative">
+                <div class="analyzing-overlay" id="metrics-overlay"><span class="text-[var(--accent-1)] font-bold text-xs animate-pulse">FETCHING...</span></div>
+                
+                <div class="border-2 border-[var(--border-color)] p-2 flex flex-col justify-between bg-[var(--bg-color)]">
+                    <i data-lucide="thermometer" class="w-4 h-4 text-[var(--text-muted)] mb-1"></i>
+                    <div class="text-[10px] text-[var(--text-muted)] uppercase">Feels Like</div>
+                    <div class="text-xl archivo-black" id="val-temp">--°C</div>
+                </div>
+                <div class="border-2 border-[var(--border-color)] p-2 flex flex-col justify-between bg-[var(--bg-color)]">
+                    <i data-lucide="droplets" class="w-4 h-4 text-[var(--accent-2)] mb-1"></i>
+                    <div class="text-[10px] text-[var(--text-muted)] uppercase">Humidity</div>
+                    <div class="text-xl archivo-black" id="val-hum">--%</div>
+                </div>
+                <div class="border-2 border-[var(--border-color)] p-2 flex flex-col justify-between bg-[var(--bg-color)]">
+                    <i data-lucide="wind" class="w-4 h-4 text-[var(--accent-1)] mb-1"></i>
+                    <div class="text-[10px] text-[var(--text-muted)] uppercase">Wind Speed</div>
+                    <div class="text-xl archivo-black" id="val-wind">-- km/h</div>
+                </div>
+                <div class="border-2 border-[var(--border-color)] p-2 flex flex-col justify-between bg-[var(--bg-color)]">
+                    <i data-lucide="sun" class="w-4 h-4 text-[var(--accent-warn)] mb-1"></i>
+                    <div class="text-[10px] text-[var(--text-muted)] uppercase">UV Max</div>
+                    <div class="text-xl archivo-black" id="val-uv">--</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="neo-box widget-item" data-id="map" id="widget-map">
+            <div class="widget-header">
+                <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="map" class="w-4 h-4 text-[var(--accent-1)]"></i> Regional Radar</h2>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMapLayer('precip')" id="btn-precip" class="bg-[var(--accent-2)] text-[var(--accent-2-text)] text-[9px] font-bold px-1.5 py-0.5 border-2 border-[var(--border-color)]">RAIN</button>
+                    <button onclick="toggleMapLayer('wind')" id="btn-wind" class="bg-[var(--card-bg)] text-[var(--text-main)] text-[9px] font-bold px-1.5 py-0.5 border-2 border-[var(--border-color)]">WIND</button>
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)] ml-1" onclick="showInfo('map')"></i>
+                    <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle ml-1"></i>
+                    <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('map', false)"></i>
+                </div>
+            </div>
+            <div class="widget-body p-0 flex flex-col min-h-[250px]">
+                <div id="map" class="flex-1 w-full bg-[#1a1a1a] z-0 min-h-[250px]"></div>
+            </div>
+        </section>
+
+        <section class="neo-box widget-item data-widget" data-id="meteogram" id="widget-meteogram">
+            <div class="widget-header">
+                <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[var(--accent-2)]"></i> 24h Forecast</h2>
+                <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('meteogram')"></i>
+                    <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
+                    <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('meteogram', false)"></i>
+                </div>
+            </div>
+            <div class="widget-body p-2 flex flex-col relative bg-[var(--bg-color)] min-h-[200px]">
+                <div class="analyzing-overlay" id="chart-overlay"><span class="text-[var(--accent-1)] font-bold text-xs animate-pulse">FETCHING...</span></div>
+                <div class="flex-1 w-full relative h-full">
+                    <canvas id="meteogram"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="neo-box widget-item data-widget" data-id="logistics" id="widget-logistics">
+            <div class="widget-header">
+                <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="car" class="w-4 h-4 text-[var(--accent-warn)]"></i> Travel & Transport</h2>
+                <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('logistics')"></i>
+                    <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
+                    <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('logistics', false)"></i>
+                </div>
+            </div>
+            <div class="widget-body flex flex-col gap-2 relative">
+                <div class="analyzing-overlay" id="logistics-overlay"><span class="text-[var(--accent-1)] font-bold text-xs animate-pulse">CHECKING ROUTES...</span></div>
+                
+                <div class="border-2 border-[var(--border-color)] p-2 rounded-sm bg-[var(--bg-color)]">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-[var(--text-main)] flex items-center gap-1"><i data-lucide="thermometer-snowflake" class="w-3 h-3 text-[var(--accent-error)]"></i> Driving Conditions</span>
+                        <span class="text-[9px] bg-[var(--accent-error)] text-white px-1 font-bold animate-pulse" id="cold-chain-status">ICE WARNING</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-muted)] leading-tight mb-2" id="cold-chain-msg">Temperatures approach freezing.</p>
+                    <div class="w-full bg-[var(--card-bg)] h-1.5"><div class="bg-[var(--accent-error)] h-1.5" style="width: 85%" id="cold-chain-bar"></div></div>
+                </div>
+
+                <div class="border-2 border-[var(--border-color)] p-2 rounded-sm bg-[var(--bg-color)]">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-[var(--text-main)] flex items-center gap-1"><i data-lucide="wind" class="w-3 h-3 text-[var(--accent-warn)]"></i> Wind Hazards</span>
+                        <span class="text-[9px] bg-[var(--accent-warn)] text-black px-1 font-bold" id="wind-risk-status">WARN</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-muted)] leading-tight" id="wind-risk-msg">High wind. Drive cautiously.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="neo-box widget-item data-widget" data-id="agro" id="widget-agro">
+            <div class="widget-header">
+                <h2 class="text-sm archivo-black flex items-center gap-2"><i data-lucide="sprout" class="w-4 h-4 text-[var(--accent-1)]"></i> Farming & Outdoors</h2>
+                <div class="flex gap-2 items-center">
+                    <i data-lucide="info" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-1)]" onclick="showInfo('agro')"></i>
+                    <i data-lucide="grip-horizontal" class="w-4 h-4 drag-handle"></i>
+                    <i data-lucide="x" class="w-4 h-4 cursor-pointer text-[var(--text-muted)] hover:text-[var(--accent-error)]" onclick="toggleWidget('agro', false)"></i>
+                </div>
+            </div>
+            <div class="widget-body flex flex-col gap-2 relative">
+                <div class="analyzing-overlay" id="agro-overlay"><span class="text-[var(--accent-1)] font-bold text-xs animate-pulse">EVALUATING...</span></div>
+
+                <div class="flex gap-2">
+                    <div class="border-2 border-[var(--border-color)] p-2 flex-1 bg-[var(--bg-color)] text-center">
+                        <div class="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1">Rainfall</div>
+                        <div class="text-xl archivo-black text-[var(--accent-1)]" id="val-precip">0 mm</div>
+                    </div>
+                    <div class="border-2 border-[var(--border-color)] p-2 flex-1 bg-[var(--bg-color)] text-center">
+                        <div class="text-[9px] text-[var(--text-muted)] uppercase font-bold mb-1">Cycle</div>
+                        <div class="text-sm font-bold text-[var(--text-main)] mt-1" id="val-daynight">DAY</div>
+                    </div>
+                </div>
+
+                <div class="border-2 border-[var(--border-color)] p-2 rounded-sm bg-[var(--bg-color)] flex-1 flex flex-col justify-center">
+                    <div class="text-[10px] font-bold text-[var(--text-main)] flex items-center gap-1 mb-1">
+                        <i data-lucide="bug" class="w-3 h-3 text-[var(--accent-2)]"></i> Crop/Outdoor Suitability: <span id="pest-risk">FAIR</span>
+                    </div>
+                    <p class="text-[9px] text-[var(--text-muted)] leading-tight">Humidity and temps currently evaluated.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden flex justify-center items-center p-4 modal-overlay overflow-y-auto">
+        <div class="neo-box max-w-md w-full bg-[var(--bg-color)] p-4 md:p-6 border-[var(--border-color)] shadow-[8px_8px_0_0_var(--shadow-color)] my-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl archivo-black text-[var(--text-main)] flex items-center gap-2"><i data-lucide="settings" class="text-[var(--accent-1)]"></i> Settings</h2>
+                <button onclick="closeSettings()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="text-[10px] font-bold uppercase text-[var(--accent-2)] mb-3 border-b-2 border-[var(--border-color)] pb-1">Maximal Header Layout</h3>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" checked onchange="toggleHeroMetric('highlow', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Show High/Low Temps</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" onchange="toggleHeroMetric('wind', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Show Wind Speed</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" onchange="toggleHeroMetric('hum', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Show Humidity</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" onchange="toggleHeroMetric('uv', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Show UV Index</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" onchange="toggleHeroMetric('precip', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Show Precipitation</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-[10px] font-bold uppercase text-[var(--accent-2)] mb-3 border-b-2 border-[var(--border-color)] pb-1">Widget Management</h3>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-metrics" checked onchange="toggleWidget('metrics', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Current Conditions</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-map" checked onchange="toggleWidget('map', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Regional Radar Map</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-meteogram" checked onchange="toggleWidget('meteogram', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">24h Forecast Chart</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-logistics" checked onchange="toggleWidget('logistics', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Travel & Transport</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-agro" checked onchange="toggleWidget('agro', this.checked)" class="w-4 h-4 accent-[var(--accent-1)]">
+                        <span class="text-sm font-bold">Farming & Outdoors</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mt-4 pt-4 border-t-2 border-[var(--border-color)]">
+                <button onclick="resetLayout()" class="neo-btn bg-[var(--card-bg)] text-[var(--text-main)] px-4 py-2 text-xs border-[var(--border-color)] shadow-none">Reset Grid Layout</button>
+                <button onclick="closeSettings()" class="neo-btn px-4 py-2 text-xs">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="info-modal" class="fixed inset-0 z-[110] hidden flex justify-center items-center p-4 modal-overlay">
+        <div class="neo-box max-w-sm w-full bg-[var(--bg-color)] p-4 md:p-6 border-[var(--accent-2)] shadow-[8px_8px_0_0_var(--shadow-color)]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg archivo-black text-[var(--accent-2)] flex items-center gap-2"><i data-lucide="info"></i> <span id="info-title">Widget Info</span></h2>
+                <button onclick="closeInfo()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]"><i data-lucide="x"></i></button>
+            </div>
+            <p id="info-text" class="text-sm text-[var(--text-main)] leading-relaxed"></p>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeInfo()" class="neo-btn px-4 py-2 text-xs bg-[var(--accent-2)] text-[var(--accent-2-text)] border-[var(--accent-2)]">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="theme-modal" class="fixed inset-0 z-[100] hidden flex justify-center items-center p-4 modal-overlay overflow-y-auto">
+        <div class="neo-box max-w-2xl w-full bg-[var(--bg-color)] flex flex-col border-[var(--border-color)] shadow-[8px_8px_0_0_var(--shadow-color)] my-4">
+            
+            <div class="p-4 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl archivo-black text-[var(--text-main)]">Theme Engine</h2>
+                    <button onclick="toggleThemeModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)]"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <details class="border-2 border-[var(--border-color)] group" open>
+                        <summary class="p-3 bg-[var(--card-bg)] font-bold text-xs uppercase cursor-pointer flex justify-between items-center text-[var(--text-main)] hover:text-[var(--accent-1)] transition-colors">
+                            Dark Themes <i data-lucide="chevron-down" class="w-4 h-4 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-3 grid grid-cols-2 md:grid-cols-5 gap-2 bg-[var(--bg-color)]">
+                            <button class="preset-btn" onclick="applyPresetKey('dark_midnight')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#4ade80]"></div><div class="w-2 h-2 rounded-full bg-[#818cf8]"></div></div> Midnight</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_cyberpunk')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#f472b6]"></div><div class="w-2 h-2 rounded-full bg-[#22d3ee]"></div></div> Cyberpunk</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_solar')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#fb923c]"></div><div class="w-2 h-2 rounded-full bg-[#facc15]"></div></div> Solar</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_toxic')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#a3e635]"></div><div class="w-2 h-2 rounded-full bg-[#c084fc]"></div></div> Toxic</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_matrix')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#22c55e]"></div><div class="w-2 h-2 rounded-full bg-[#16a34a]"></div></div> Matrix</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_nebula')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#d946ef]"></div><div class="w-2 h-2 rounded-full bg-[#8b5cf6]"></div></div> Nebula</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_synth')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#e879f9]"></div><div class="w-2 h-2 rounded-full bg-[#2dd4bf]"></div></div> Synthwave</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_ocean')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0ea5e9]"></div><div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div></div> Deep Ocean</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_blood')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#ef4444]"></div><div class="w-2 h-2 rounded-full bg-[#dc2626]"></div></div> Blood Moon</button>
+                            <button class="preset-btn" onclick="applyPresetKey('dark_charcoal')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#94a3b8]"></div><div class="w-2 h-2 rounded-full bg-[#64748b]"></div></div> Charcoal</button>
+                        </div>
+                    </details>
+
+                    <details class="border-2 border-[var(--border-color)] group">
+                        <summary class="p-3 bg-[var(--card-bg)] font-bold text-xs uppercase cursor-pointer flex justify-between items-center text-[var(--text-main)] hover:text-[var(--accent-1)] transition-colors">
+                            Light Themes <i data-lucide="chevron-down" class="w-4 h-4 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-3 grid grid-cols-2 md:grid-cols-5 gap-2 bg-[var(--bg-color)]">
+                            <button class="preset-btn" onclick="applyPresetKey('light_clean')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div><div class="w-2 h-2 rounded-full bg-[#10b981]"></div></div> Clean Slate</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_paper')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#cb4b16]"></div><div class="w-2 h-2 rounded-full bg-[#2aa198]"></div></div> Paper</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_corp')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#1d4ed8]"></div><div class="w-2 h-2 rounded-full bg-[#475569]"></div></div> Corporate</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_rose')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#e11d48]"></div><div class="w-2 h-2 rounded-full bg-[#f43f5e]"></div></div> Rose</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_mint')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#14b8a6]"></div><div class="w-2 h-2 rounded-full bg-[#84cc16]"></div></div> Mint</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_lavender')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#8b5cf6]"></div><div class="w-2 h-2 rounded-full bg-[#d946ef]"></div></div> Lavender</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_citrus')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#f59e0b]"></div><div class="w-2 h-2 rounded-full bg-[#f97316]"></div></div> Citrus</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_sand')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#b45309]"></div><div class="w-2 h-2 rounded-full bg-[#78350f]"></div></div> Sandstone</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_frost')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0ea5e9]"></div><div class="w-2 h-2 rounded-full bg-[#38bdf8]"></div></div> Frost</button>
+                            <button class="preset-btn" onclick="applyPresetKey('light_sky')"><div class="flex justify-center gap-1 mb-1"><div class="w-2 h-2 rounded-full bg-[#0284c7]"></div><div class="w-2 h-2 rounded-full bg-[#0369a1]"></div></div> Sky</button>
+                        </div>
+                    </details>
+                </div>
+
+                <div class="border-t-2 border-[var(--border-color)] pt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-[10px] font-bold uppercase text-[var(--text-muted)]">Dynamic Weather Themes</h3>
+                        <span id="dynamic-status" class="text-[10px] font-bold px-2 py-0.5 bg-[var(--card-bg)] text-[var(--text-muted)] border border-[var(--border-color)]">DISABLED</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-muted)] mb-3">Automatically shifts background and colors based on the location's biome (Rainforest, Arctic, Desert, Plains) and real-time weather (Base, Rainy, Stormy, Snowy).</p>
+                    <button onclick="toggleDynamicTheme()" id="btn-dynamic" class="neo-btn w-full py-2 text-xs bg-[var(--card-bg)] text-[var(--text-main)] border-[var(--border-color)] shadow-none hover:bg-[var(--accent-1)] hover:text-[var(--accent-1-text)]">
+                        Enable Auto-Dynamic Theme
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const grid = document.getElementById('dashboard-grid');
+        let initialDOMOrder = Array.from(grid.children);
+        let currentWeatherData = { temp: 20, hum: 50, precip: 0, wind: 10 };
+        let isDynamicThemeActive = false;
+        let selectedLat = -1.2921;
+        let selectedLon = 36.8219;
+
+        const sortableGrid = Sortable.create(grid, {
+            animation: 200,
+            handle: '.drag-handle',
+            ghostClass: 'opacity-50',
+            onEnd: function() {
+                if(map) setTimeout(() => map.invalidateSize(), 50);
+                if(meteogramChart) setTimeout(() => meteogramChart.resize(), 50);
+            }
+        });
+
+        function resetLayout() {
+            initialDOMOrder.forEach(el => grid.appendChild(el));
+            if(map) setTimeout(() => map.invalidateSize(), 50);
+            if(meteogramChart) setTimeout(() => meteogramChart.resize(), 50);
+        }
+
+        function toggleWidget(id, show) {
+            const widget = document.getElementById(`widget-${id}`);
+            const checkbox = document.getElementById(`chk-${id}`);
+            if(show) {
+                widget.classList.remove('hidden');
+                if(checkbox) checkbox.checked = true;
+            } else {
+                widget.classList.add('hidden');
+                if(checkbox) checkbox.checked = false;
+            }
+            if(map) setTimeout(() => map.invalidateSize(), 50);
+            if(meteogramChart) setTimeout(() => meteogramChart.resize(), 50);
+        }
+
+        function toggleHeroMetric(id, show) {
+            const el = document.getElementById(`hm-${id}`);
+            if(show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function toggleThemeModal() { document.getElementById('theme-modal').classList.toggle('hidden'); }
+
+        const widgetInfoData = {
+            metrics: { title: "Current Conditions", text: "A quick breakdown of the exact weather parameters affecting you right now. Includes sensible temperature, humidity, wind, and UV exposure." },
+            map: { title: "Regional Radar", text: "Interactive geographic overlay showing local weather patterns. Toggle rain radar and wind streamlines to visualize immediate outdoor changes." },
+            meteogram: { title: "24h Forecast Chart", text: "A multi-layered 24-hour graphing tool combining temperature trends and wind speeds to help you plan your day, travel, or outdoor activities." },
+            logistics: { title: "Travel & Transport", text: "Monitors conditions for driving or traveling. Alerts if temperatures pose freezing/ice risks or if high winds could make driving hazardous." },
+            agro: { title: "Farming & Outdoors", text: "Calculates outdoor impacts based on moisture. Monitors precipitation levels and estimates if the humidity/temperature is suitable for planting, farming, or outdoor events." }
+        };
+
+        function showInfo(id) {
+            const data = widgetInfoData[id];
+            if(!data) return;
+            document.getElementById('info-title').innerText = data.title;
+            document.getElementById('info-text').innerText = data.text;
+            document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        function closeInfo() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
+        const themePalettes = {
+            dark_midnight: { bg: '#121212', card: '#1e1e1e', text: '#e0e0e0', muted: '#9ca3af', border: '#333333', a1: '#4ade80', a1t: '#121212', a2: '#818cf8', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
+            dark_cyberpunk: { bg: '#09090b', card: '#18181b', text: '#f4f4f5', muted: '#a1a1aa', border: '#27272a', a1: '#f472b6', a1t: '#121212', a2: '#22d3ee', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
+            dark_solar: { bg: '#171717', card: '#262626', text: '#f5f5f5', muted: '#a3a3a3', border: '#404040', a1: '#fb923c', a1t: '#121212', a2: '#facc15', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
+            dark_toxic: { bg: '#0f172a', card: '#1e293b', text: '#f8fafc', muted: '#94a3b8', border: '#334155', a1: '#a3e635', a1t: '#121212', a2: '#c084fc', a2t: '#121212', map: 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)', shadow: '#000000' },
+            dark_matrix: { bg: '#020617', card: '#0f172a', text: '#4ade80', muted: '#22c55e', border: '#166534', a1: '#22c55e', a1t: '#020617', a2: '#16a34a', a2t: '#ffffff', map: 'invert(100%) hue-rotate(120deg) brightness(90%)', shadow: '#000000' },
+            dark_nebula: { bg: '#1e1b4b', card: '#312e81', text: '#e0e7ff', muted: '#a5b4fc', border: '#4338ca', a1: '#d946ef', a1t: '#ffffff', a2: '#8b5cf6', a2t: '#ffffff', map: 'invert(100%) hue-rotate(220deg)', shadow: '#000000' },
+            dark_synth: { bg: '#2e1065', card: '#4c1d95', text: '#fdf4ff', muted: '#f0abfc', border: '#7e22ce', a1: '#e879f9', a1t: '#2e1065', a2: '#2dd4bf', a2t: '#2e1065', map: 'invert(100%) hue-rotate(280deg)', shadow: '#000000' },
+            dark_ocean: { bg: '#082f49', card: '#0c4a6e', text: '#e0f2fe', muted: '#7dd3fc', border: '#0369a1', a1: '#0ea5e9', a1t: '#ffffff', a2: '#3b82f6', a2t: '#ffffff', map: 'invert(100%) hue-rotate(200deg)', shadow: '#000000' },
+            dark_blood: { bg: '#450a0a', card: '#7f1d1d', text: '#fee2e2', muted: '#fca5a5', border: '#991b1b', a1: '#ef4444', a1t: '#ffffff', a2: '#dc2626', a2t: '#ffffff', map: 'invert(100%) hue-rotate(340deg)', shadow: '#000000' },
+            dark_charcoal: { bg: '#020617', card: '#0f172a', text: '#f8fafc', muted: '#64748b', border: '#1e293b', a1: '#94a3b8', a1t: '#020617', a2: '#64748b', a2t: '#ffffff', map: 'invert(100%) grayscale(100%)', shadow: '#000000' },
+
+            light_clean: { bg: '#f8fafc', card: '#ffffff', text: '#0f172a', muted: '#64748b', border: '#cbd5e1', a1: '#3b82f6', a1t: '#ffffff', a2: '#10b981', a2t: '#ffffff', map: 'none', shadow: '#94a3b8' },
+            light_paper: { bg: '#fdf6e3', card: '#eee8d5', text: '#073642', muted: '#586e75', border: '#ccc5b9', a1: '#cb4b16', a1t: '#ffffff', a2: '#2aa198', a2t: '#ffffff', map: 'none', shadow: '#93a1a1' },
+            light_corp: { bg: '#f1f5f9', card: '#f8fafc', text: '#1e293b', muted: '#475569', border: '#94a3b8', a1: '#1d4ed8', a1t: '#ffffff', a2: '#475569', a2t: '#ffffff', map: 'none', shadow: '#64748b' },
+            light_rose: { bg: '#fff1f2', card: '#ffe4e6', text: '#881337', muted: '#be123c', border: '#fecdd3', a1: '#e11d48', a1t: '#ffffff', a2: '#f43f5e', a2t: '#ffffff', map: 'none', shadow: '#fda4af' },
+            light_mint: { bg: '#f0fdf4', card: '#f2fbf5', text: '#14532d', muted: '#16a34a', border: '#bbf7d0', a1: '#14b8a6', a1t: '#ffffff', a2: '#84cc16', a2t: '#ffffff', map: 'none', shadow: '#86efac' },
+            light_lavender: { bg: '#faf5ff', card: '#ffffff', text: '#4c1d95', muted: '#7e22ce', border: '#e9d5ff', a1: '#8b5cf6', a1t: '#ffffff', a2: '#d946ef', a2t: '#ffffff', map: 'none', shadow: '#d8b4fe' },
+            light_citrus: { bg: '#fffbeb', card: '#fef3c7', text: '#78350f', muted: '#b45309', border: '#fde68a', a1: '#f59e0b', a1t: '#ffffff', a2: '#f97316', a2t: '#ffffff', map: 'none', shadow: '#fcd34d' },
+            light_sand: { bg: '#fefce8', card: '#fef9c3', text: '#713f12', muted: '#a16207', border: '#fef08a', a1: '#b45309', a1t: '#ffffff', a2: '#78350f', a2t: '#ffffff', map: 'none', shadow: '#fde047' },
+            light_frost: { bg: '#f0f9ff', card: '#e0f2fe', text: '#0c4a6e', muted: '#0284c7', border: '#bae6fd', a1: '#0ea5e9', a1t: '#ffffff', a2: '#38bdf8', a2t: '#121212', map: 'none', shadow: '#7dd3fc' },
+            light_sky: { bg: '#e0f2fe', card: '#f0f9ff', text: '#082f49', muted: '#0369a1', border: '#7dd3fc', a1: '#0284c7', a1t: '#ffffff', a2: '#0369a1', a2t: '#ffffff', map: 'none', shadow: '#38bdf8' },
+
+            desert_base: { bg: '#fef3c7', card: '#fde68a', text: '#78350f', muted: '#b45309', border: '#fcd34d', a1: '#d97706', a1t: '#ffffff', a2: '#059669', a2t: '#ffffff', map: 'none', shadow: '#d97706' },
+            desert_rainy: { bg: '#d6d3d1', card: '#e7e5e4', text: '#44403c', muted: '#78716c', border: '#a8a29e', a1: '#0284c7', a1t: '#ffffff', a2: '#ca8a04', a2t: '#ffffff', map: 'none', shadow: '#78716c' },
+            desert_stormy: { bg: '#92400e', card: '#78350f', text: '#fef3c7', muted: '#fcd34d', border: '#b45309', a1: '#fcd34d', a1t: '#78350f', a2: '#f87171', a2t: '#78350f', map: 'invert(100%) hue-rotate(180deg)', shadow: '#451a03' },
+            arctic_base: { bg: '#f0fdfa', card: '#ffffff', text: '#0f172a', muted: '#64748b', border: '#ccfbf1', a1: '#0ea5e9', a1t: '#ffffff', a2: '#6366f1', a2t: '#ffffff', map: 'none', shadow: '#94a3b8' },
+            arctic_snowy: { bg: '#e0f2fe', card: '#f0f9ff', text: '#1e3a8a', muted: '#3b82f6', border: '#bae6fd', a1: '#38bdf8', a1t: '#ffffff', a2: '#818cf8', a2t: '#ffffff', map: 'none', shadow: '#7dd3fc' },
+            arctic_stormy: { bg: '#1e293b', card: '#334155', text: '#f8fafc', muted: '#94a3b8', border: '#475569', a1: '#cbd5e1', a1t: '#1e293b', a2: '#94a3b8', a2t: '#1e293b', map: 'invert(100%) hue-rotate(180deg)', shadow: '#0f172a' },
+            rainforest_base: { bg: '#064e3b', card: '#065f46', text: '#ecfdf5', muted: '#6ee7b7', border: '#047857', a1: '#34d399', a1t: '#064e3b', a2: '#fbbf24', a2t: '#064e3b', map: 'invert(100%) hue-rotate(180deg) brightness(80%) sepia(30%)', shadow: '#022c22' },
+            rainforest_rainy: { bg: '#022c22', card: '#064e3b', text: '#d1fae5', muted: '#34d399', border: '#047857', a1: '#60a5fa', a1t: '#022c22', a2: '#34d399', a2t: '#022c22', map: 'invert(100%) hue-rotate(180deg)', shadow: '#000000' },
+            rainforest_stormy: { bg: '#171717', card: '#262626', text: '#d1fae5', muted: '#a3a3a3', border: '#404040', a1: '#059669', a1t: '#ffffff', a2: '#3b82f6', a2t: '#ffffff', map: 'invert(100%) hue-rotate(180deg)', shadow: '#000000' },
+            plains_base: { bg: '#f7fee7', card: '#ecfccb', text: '#3f6212', muted: '#65a30d', border: '#d9f99d', a1: '#65a30d', a1t: '#ffffff', a2: '#0284c7', a2t: '#ffffff', map: 'none', shadow: '#bef264' },
+            plains_rainy: { bg: '#e2e8f0', card: '#cbd5e1', text: '#334155', muted: '#64748b', border: '#94a3b8', a1: '#2563eb', a1t: '#ffffff', a2: '#059669', a2t: '#ffffff', map: 'none', shadow: '#64748b' },
+            plains_stormy: { bg: '#334155', card: '#475569', text: '#f8fafc', muted: '#cbd5e1', border: '#64748b', a1: '#94a3b8', a1t: '#1e293b', a2: '#38bdf8', a2t: '#1e293b', map: 'invert(100%) hue-rotate(180deg)', shadow: '#1e293b' },
+            plains_snowy: { bg: '#f8fafc', card: '#f1f5f9', text: '#334155', muted: '#94a3b8', border: '#e2e8f0', a1: '#0ea5e9', a1t: '#ffffff', a2: '#64748b', a2t: '#ffffff', map: 'none', shadow: '#cbd5e1' }
+        };
+
+        function applyThemeObject(p) {
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', p.bg);
+            root.style.setProperty('--card-bg', p.card);
+            root.style.setProperty('--text-main', p.text);
+            root.style.setProperty('--text-muted', p.muted);
+            root.style.setProperty('--border-color', p.border);
+            root.style.setProperty('--shadow-color', p.shadow);
+            root.style.setProperty('--accent-1', p.a1);
+            root.style.setProperty('--accent-1-text', p.a1t);
+            root.style.setProperty('--accent-2', p.a2);
+            root.style.setProperty('--accent-2-text', p.a2t);
+            root.style.setProperty('--map-filter', p.map);
+            initChart();
+        }
+
+        function applyPresetKey(key) {
+            isDynamicThemeActive = false;
+            updateDynamicUI();
+            if(themePalettes[key]) {
+                applyThemeObject(themePalettes[key]);
+            }
+        }
+
+        function toggleDynamicTheme() {
+            isDynamicThemeActive = !isDynamicThemeActive;
+            updateDynamicUI();
+            if(isDynamicThemeActive) evaluateDynamicTheme();
+        }
+
+        function updateDynamicUI() {
+            const status = document.getElementById('dynamic-status');
+            const btn = document.getElementById('btn-dynamic');
+            if(isDynamicThemeActive) {
+                status.innerText = 'ACTIVE';
+                status.style.color = 'var(--accent-1)';
+                status.style.borderColor = 'var(--accent-1)';
+                btn.innerText = 'Disable Auto-Dynamic Theme';
+                btn.classList.add('border-[var(--accent-1)]');
+            } else {
+                status.innerText = 'DISABLED';
+                status.style.color = 'var(--text-muted)';
+                status.style.borderColor = 'var(--border-color)';
+                btn.innerText = 'Enable Auto-Dynamic Theme';
+                btn.classList.remove('border-[var(--accent-1)]');
+            }
+        }
+
+        function evaluateDynamicTheme() {
+            if(!isDynamicThemeActive) return;
+            const t = currentWeatherData.temp;
+            const h = currentWeatherData.hum;
+            const p = currentWeatherData.precip;
+            const w = currentWeatherData.wind;
+
+            let biome = 'plains';
+            if (t < 5) biome = 'arctic';
+            else if (t > 30 && h < 40) biome = 'desert';
+            else if (h > 70 && t > 20) biome = 'rainforest';
+
+            let weather = 'base';
+            if (p > 5 && w > 40) weather = 'stormy';
+            else if (p > 0 && t <= 0) weather = 'snowy';
+            else if (p > 0) weather = 'rainy';
+
+            let key = `${biome}_${weather}`;
+            if (!themePalettes[key]) key = `${biome}_base`;
+            if (!themePalettes[key]) key = 'plains_base';
+            
+            applyThemeObject(themePalettes[key]);
+            document.getElementById('dynamic-status').innerText = `ACTIVE: ${biome.toUpperCase()} (${weather.toUpperCase()})`;
+        }
+
+        function getWMOText(code) {
+            const codes = {
+                0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+                45: "Foggy", 48: "Rime Fog", 51: "Light Drizzle", 53: "Drizzle", 55: "Heavy Drizzle",
+                61: "Light Rain", 63: "Rain", 65: "Heavy Rain", 71: "Light Snow", 73: "Snow",
+                75: "Heavy Snow", 77: "Snow Grains", 80: "Rain Showers", 81: "Heavy Showers",
+                82: "Violent Showers", 85: "Snow Showers", 86: "Heavy Snow Showers",
+                95: "Thunderstorm", 96: "Thunderstorm & Hail", 99: "Heavy Thunderstorm"
+            };
+            return codes[code] || "Unknown Conditions";
+        }
+
+        async function fetchWeather(lat, lon) {
+            const overlays = [document.getElementById('metrics-overlay'), document.getElementById('chart-overlay'), document.getElementById('logistics-overlay'), document.getElementById('agro-overlay'), document.getElementById('hero-overlay')];
+            overlays.forEach(o => { if(o) o.style.display = 'flex'; });
+
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,wind_speed_10m,weathercode&hourly=temperature_2m,wind_speed_10m&daily=uv_index_max,temperature_2m_max,temperature_2m_min&timezone=auto`);
+                const data = await res.json();
+
+                currentWeatherData = {
+                    temp: data.current.temperature_2m,
+                    hum: data.current.relative_humidity_2m,
+                    precip: data.current.precipitation,
+                    wind: data.current.wind_speed_10m
+                };
+
+                const conditionText = getWMOText(data.current.weathercode);
+                const highTemp = Math.round(data.daily.temperature_2m_max[0]);
+                const lowTemp = Math.round(data.daily.temperature_2m_min[0]);
+                const currentTemp = Math.round(data.current.temperature_2m);
+                const feelsLike = Math.round(data.current.apparent_temperature);
+                const uvMax = data.daily.uv_index_max[0] || 'N/A';
+
+                document.getElementById('hero-temp').innerText = currentTemp + '°';
+                document.getElementById('hero-condition').innerText = conditionText;
+                document.getElementById('hero-hl-val').innerText = `H:${highTemp}° L:${lowTemp}°`;
+                document.getElementById('hero-wind-val').innerText = currentWeatherData.wind + ' km/h';
+                document.getElementById('hero-hum-val').innerText = currentWeatherData.hum + '%';
+                document.getElementById('hero-uv-val').innerText = uvMax;
+                document.getElementById('hero-precip-val').innerText = currentWeatherData.precip + ' mm';
+
+                document.getElementById('val-temp').innerText = feelsLike + '°C';
+                document.getElementById('val-hum').innerText = currentWeatherData.hum + '%';
+                document.getElementById('val-wind').innerText = currentWeatherData.wind + ' km/h';
+                document.getElementById('val-uv').innerText = uvMax;
+                document.getElementById('val-precip').innerText = currentWeatherData.precip + ' mm';
+                document.getElementById('val-daynight').innerText = data.current.is_day ? 'DAY' : 'NIGHT';
+
+                const hum = currentWeatherData.hum;
+                document.getElementById('pest-risk').innerText = hum > 70 ? 'FAIR' : (hum > 40 ? 'GOOD' : 'POOR');
+
+                const temp = currentWeatherData.temp;
+                const wind = currentWeatherData.wind;
+                const ccStatus = document.getElementById('cold-chain-status');
+                const ccMsg = document.getElementById('cold-chain-msg');
+                const ccBar = document.getElementById('cold-chain-bar');
+                
+                if(temp < 2) {
+                    ccStatus.innerText = 'ICE RISK';
+                    ccStatus.style.backgroundColor = 'var(--accent-error)';
+                    ccMsg.innerText = `Temp (${temp}°C) approaches freezing. Drive cautiously.`;
+                    ccBar.style.backgroundColor = 'var(--accent-error)';
+                } else if(temp > 35) {
+                    ccStatus.innerText = 'HEAT RISK';
+                    ccStatus.style.backgroundColor = 'var(--accent-error)';
+                    ccMsg.innerText = `Temp (${temp}°C) extremely high. Check tires/coolant.`;
+                    ccBar.style.backgroundColor = 'var(--accent-error)';
+                } else {
+                    ccStatus.innerText = 'CLEAR';
+                    ccStatus.style.backgroundColor = 'var(--accent-1)';
+                    ccMsg.innerText = `Temperatures (${temp}°C) safe for travel.`;
+                    ccBar.style.backgroundColor = 'var(--accent-1)';
+                }
+
+                const wRisk = document.getElementById('wind-risk-status');
+                const wMsg = document.getElementById('wind-risk-msg');
+                if(wind > 30) {
+                    wRisk.innerText = 'WARN';
+                    wRisk.style.backgroundColor = 'var(--accent-warn)';
+                    wMsg.innerText = `High wind (${wind}km/h). Expect crosswinds.`;
+                } else {
+                    wRisk.innerText = 'CLEAR';
+                    wRisk.style.backgroundColor = 'var(--accent-1)';
+                    wMsg.innerText = `Wind conditions normal (${wind}km/h).`;
+                }
+
+                const times = data.hourly.time.slice(0, 24).filter((_,i)=>i%4===0).map(t => new Date(t).getHours()+'h');
+                const temps = data.hourly.temperature_2m.slice(0, 24).filter((_,i)=>i%4===0);
+                const winds = data.hourly.wind_speed_10m.slice(0, 24).filter((_,i)=>i%4===0);
+
+                if(meteogramChart) {
+                    meteogramChart.data.labels = times;
+                    meteogramChart.data.datasets[0].data = temps;
+                    meteogramChart.data.datasets[1].data = winds;
+                    meteogramChart.update();
+                }
+
+                if(map) map.setView([lat, lon], 10);
+                if(radarLayer) radarLayer.setLatLng([lat, lon]);
+
+                evaluateDynamicTheme();
+
+            } catch(e) {
+                console.error("API Error");
+                document.getElementById('hero-temp').innerText = 'ERR';
+            }
+
+            setTimeout(() => {
+                overlays.forEach(o => { if(o) o.style.display = 'none'; });
+            }, 500);
+        }
+
+        const locationInput = document.getElementById('location-input');
+        const autocompleteResults = document.getElementById('autocomplete-results');
+        let searchTimeout;
+
+        locationInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 3) {
+                autocompleteResults.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json`);
+                    const data = await res.json();
+                    
+                    autocompleteResults.innerHTML = '';
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(place => {
+                            const div = document.createElement('div');
+                            div.className = 'autofill-item text-[var(--text-main)]';
+                            div.innerText = `${place.name}, ${place.admin1 ? place.admin1 + ', ' : ''}${place.country}`;
+                            div.onclick = () => {
+                                selectLocation(place.name, place.latitude, place.longitude);
+                            };
+                            autocompleteResults.appendChild(div);
+                        });
+                        autocompleteResults.classList.remove('hidden');
+                    } else {
+                        autocompleteResults.classList.add('hidden');
+                    }
+                } catch(err) {
+                    console.error("Geocoding Error");
+                }
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!locationInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+                autocompleteResults.classList.add('hidden');
+            }
+        });
+
+        function selectLocation(name, lat, lon) {
+            locationInput.value = '';
+            autocompleteResults.classList.add('hidden');
+            const heroLoc = document.getElementById('hero-location');
+            if(heroLoc) heroLoc.innerText = name;
+            selectedLat = lat;
+            selectedLon = lon;
+            fetchWeather(lat, lon);
+        }
+
+        function applyPresetOrg() {
+            const select = document.getElementById('org-preset');
+            if(!select.value) return;
+            const name = select.options[select.selectedIndex].text;
+            const coords = select.value.split(',');
+            const lat = parseFloat(coords[0]);
+            const lon = parseFloat(coords[1]);
+            
+            const heroLoc = document.getElementById('hero-location');
+            if(heroLoc) heroLoc.innerText = name;
+            selectedLat = lat;
+            selectedLon = lon;
+            fetchWeather(lat, lon);
+            select.selectedIndex = 0;
+        }
+
+        let meteogramChart;
+        function initChart() {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const a1 = rootStyle.getPropertyValue('--accent-1').trim();
+            const a2 = rootStyle.getPropertyValue('--accent-2').trim();
+            const border = rootStyle.getPropertyValue('--border-color').trim();
+            const textMain = rootStyle.getPropertyValue('--text-main').trim();
+
+            const ctx = document.getElementById('meteogram').getContext('2d');
+            if(meteogramChart) meteogramChart.destroy();
+
+            Chart.defaults.font.family = "'Space Mono', monospace";
+            Chart.defaults.color = textMain;
+
+            meteogramChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: meteogramChart ? meteogramChart.data.labels : ['--','--','--','--','--','--'],
+                    datasets: [
+                        {
+                            label: 'Temp °C',
+                            data: meteogramChart ? meteogramChart.data.datasets[0].data : [0,0,0,0,0,0],
+                            borderColor: a1, backgroundColor: a1, borderWidth: 3, tension: 0, yAxisID: 'y',
+                            pointRadius: 3, pointBackgroundColor: 'transparent', pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Wind km/h',
+                            data: meteogramChart ? meteogramChart.data.datasets[1].data : [0,0,0,0,0,0],
+                            borderColor: a2, borderWidth: 2, borderDash: [4, 4], tension: 0, yAxisID: 'y', pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } }, tooltip: { backgroundColor: rootStyle.getPropertyValue('--card-bg'), titleColor: textMain, bodyColor: textMain, titleFont: { family: 'Archivo Black' }, borderColor: border, borderWidth: 2, cornerRadius: 0 } },
+                    scales: {
+                        x: { grid: { color: border, tickLength: 0 }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: border }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        let map; let radarLayer, windLayer;
+        function initMap() {
+            if(map) {
+                map.remove();
+            }
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([selectedLat, selectedLon], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            radarLayer = L.circle([selectedLat, selectedLon], { color: 'blue', fillColor: '#3b82f6', fillOpacity: 0.5, radius: 20000 }).addTo(map);
+            const windPaths = [[[-1.3, 36.7], [-1.2, 36.9]], [[-1.35, 36.75], [-1.25, 36.95]]];
+            windLayer = L.layerGroup(windPaths.map(p => L.polyline(p, {color: 'var(--accent-2)', weight: 3, dashArray: '5, 10'})));
+            setTimeout(() => map.invalidateSize(), 400);
+        }
+
+        function toggleMapLayer(type) {
+            const btn = document.getElementById(`btn-${type}`);
+            const layer = type === 'precip' ? radarLayer : windLayer;
+            const accent = type === 'precip' ? 'var(--accent-2)' : 'var(--accent-1)';
+            const textAccent = type === 'precip' ? 'var(--accent-2-text)' : 'var(--accent-1-text)';
+
+            if (map.hasLayer(layer)) {
+                map.removeLayer(layer);
+                btn.style.backgroundColor = 'var(--card-bg)';
+                btn.style.color = 'var(--text-main)';
+            } else {
+                map.addLayer(layer);
+                btn.style.backgroundColor = accent;
+                btn.style.color = textAccent;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            initMap();
+            selectLocation('Nairobi, Kenya', -1.2921, 36.8219);
+            window.addEventListener('resize', () => {
+                if(map) map.invalidateSize();
+                if(meteogramChart) meteogramChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>
