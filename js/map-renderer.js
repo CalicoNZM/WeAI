@@ -1,22 +1,26 @@
 /* ============================================================
-   MAP RENDERER — Leaflet Interactive Map Integration
+   MAP RENDERER — Leaflet interactive map with click support
    ============================================================ */
 
 const MapRenderer = {
   map: null,
-  mainMap: null,
   planningMap: null,
   shadowLayers: [],
   buildingLayers: [],
   treeLayers: [],
   routeLayers: [],
-  heatLayer: null,
+  routeMarkers: [],   // start/end markers
+  placedObjects: [],  // planning objects
   currentLayer: 'shade',
   center: [40.7128, -74.006],
+  cityName: 'New York City',
+
+  // Callbacks (set by app)
+  onMapClick: null,
 
   init(containerId, center, zoom) {
     this.center = center || [40.7128, -74.006];
-    this.mainMap = L.map(containerId, {
+    this.map = L.map(containerId, {
       center: this.center,
       zoom: zoom || 15,
       zoomControl: false,
@@ -26,239 +30,176 @@ const MapRenderer = {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd'
-    }).addTo(this.mainMap);
+    }).addTo(this.map);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(this.mainMap);
+    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+
+    this.map.on('click', (e) => {
+      if (this.onMapClick) this.onMapClick(e);
+    });
 
     this._addMockData();
     this._setupLayerControls();
-    return this.mainMap;
+    return this.map;
   },
 
-  initPlanning(containerId) {
-    this.planningMap = L.map(containerId, {
-      center: this.center,
-      zoom: 14,
-      zoomControl: false,
-      attributionControl: false
-    });
+  setCenter(lat, lng, zoom, cityName) {
+    this.center = [lat, lng];
+    this.cityName = cityName || 'Unknown';
+    this.map.setView([lat, lng], zoom || 14);
+    this._clearAllData();
+    this._addMockData();
+    this._drawShadows();
+  },
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd'
-    }).addTo(this.planningMap);
-
-    this._addPlanningData();
-    return this.planningMap;
+  flyTo(lat, lng, zoom) {
+    this.center = [lat, lng];
+    this.map.flyTo([lat, lng], zoom || 15, { duration: 1.2 });
+    setTimeout(() => {
+      this._clearAllData();
+      this._addMockData();
+      this._drawShadows();
+    }, 1500);
   },
 
   _addMockData() {
+    if (!this.map) return;
     this._drawBuildings();
     this._drawTrees();
     this._drawShadows();
   },
 
+  _clearAllData() {
+    [...this.shadowLayers, ...this.buildingLayers, ...this.treeLayers, ...this.routeLayers, ...this.routeMarkers].forEach(l => {
+      if (this.map) this.map.removeLayer(l);
+    });
+    this.shadowLayers = [];
+    this.buildingLayers = [];
+    this.treeLayers = [];
+    this.routeLayers = [];
+    this.routeMarkers = [];
+  },
+
   _drawBuildings() {
-    for (const b of ShadowCalc.buildings) {
+    const center = this.center;
+    const buildingData = [
+      { lat: center[0] + 0.003, lng: center[1] + 0.002, height: 45, width: 30, depth: 20 },
+      { lat: center[0] + 0,    lng: center[1] + 0.004, height: 60, width: 25, depth: 18 },
+      { lat: center[0] - 0.002,lng: center[1] + 0.001, height: 35, width: 40, depth: 25 },
+      { lat: center[0] + 0.004,lng: center[1] - 0.002, height: 50, width: 20, depth: 15 },
+      { lat: center[0] - 0.001,lng: center[1] - 0.003, height: 70, width: 35, depth: 22 },
+      { lat: center[0] + 0.005,lng: center[1] + 0.005, height: 25, width: 50, depth: 30 },
+      { lat: center[0] - 0.003,lng: center[1] + 0.003, height: 40, width: 28, depth: 20 },
+      { lat: center[0] + 0.002,lng: center[1] - 0.004, height: 55, width: 32, depth: 24 },
+      { lat: center[0] + 0.001,lng: center[1] - 0.001, height: 30, width: 22, depth: 16 },
+      { lat: center[0] - 0.004,lng: center[1] - 0.002, height: 80, width: 45, depth: 28 },
+    ];
+
+    for (const b of buildingData) {
       const latPerM = 0.00000899;
       const lngPerM = 0.0000113 / Math.cos(SolarCalc.degToRad(b.lat));
       const w = b.width * lngPerM;
       const d = b.depth * latPerM;
-      const bounds = [
-        [b.lat - d, b.lng - w],
-        [b.lat - d, b.lng + w],
-        [b.lat + d, b.lng + w],
-        [b.lat + d, b.lng - w]
-      ];
-
+      const bounds = [[b.lat - d, b.lng - w], [b.lat - d, b.lng + w], [b.lat + d, b.lng + w], [b.lat + d, b.lng - w]];
       const building = L.polygon(bounds, {
-        color: b.color,
-        fillColor: '#334155',
-        fillOpacity: 0.85,
-        weight: 1,
-        opacity: 0.6
-      }).addTo(this.mainMap);
-
-      const heightLabel = L.marker([b.lat, b.lng], {
-        icon: L.divIcon({
-          className: 'building-height-label',
-          html: `<span style="color:#94A3B8;font-size:10px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,0.8)">${b.height}m</span>`,
-          iconSize: [0, 0],
-          iconAnchor: [0, 0]
-        })
-      }).addTo(this.mainMap);
-
-      this.buildingLayers.push(building, heightLabel);
+        color: '#1E293B', fillColor: '#334155', fillOpacity: 0.85, weight: 1, opacity: 0.6
+      }).addTo(this.map);
+      this.buildingLayers.push(building);
     }
   },
 
   _drawTrees() {
-    for (const t of ShadowCalc.trees) {
+    const center = this.center;
+    const treeData = [
+      { lat: center[0] + 0.002, lng: center[1] + 0.001, canopy: 8 },
+      { lat: center[0] - 0.001, lng: center[1] + 0.003, canopy: 6 },
+      { lat: center[0] + 0.004, lng: center[1] - 0.001, canopy: 10 },
+      { lat: center[0] - 0.002, lng: center[1] - 0.002, canopy: 5 },
+      { lat: center[0] + 0.003, lng: center[1] + 0.004, canopy: 9 },
+      { lat: center[0] + 0.001, lng: center[1] - 0.003, canopy: 7 },
+      { lat: center[0] - 0.003, lng: center[1] + 0.002, canopy: 6 },
+      { lat: center[0] + 0.005, lng: center[1] + 0.001, canopy: 8 },
+    ];
+    for (const t of treeData) {
       const tree = L.circleMarker([t.lat, t.lng], {
-        radius: t.canopy * 0.8,
-        color: '#065F46',
-        fillColor: '#10B981',
-        fillOpacity: 0.5,
-        weight: 1,
-        opacity: 0.6
-      }).addTo(this.mainMap);
-
+        radius: t.canopy * 0.8, color: '#065F46', fillColor: '#10B981', fillOpacity: 0.5, weight: 1, opacity: 0.6
+      }).addTo(this.map);
       this.treeLayers.push(tree);
     }
   },
 
-  _drawShadows() {
-    const sunPos = SolarCalc.getSunPosition(new Date());
-    const shadows = ShadowCalc.calculateShadows(sunPos);
-
-    this._clearShadows();
-
-    for (const s of shadows) {
-      const latPerM = 0.00000899;
-      const lngPerM = 0.0000113 / Math.cos(SolarCalc.degToRad(s.startLat));
-
-      if (s.type === 'building') {
-        const w = s.width * lngPerM;
-        const d = s.depth * latPerM;
-        const dx = s.endLng - s.startLng;
-        const dy = s.endLat - s.startLat;
-
-        const corners = [
-          [s.startLat - d, s.startLng - w],
-          [s.startLat - d, s.startLng + w],
-          [s.startLat + d, s.startLng + w],
-          [s.startLat + d, s.startLng - w]
-        ];
-
-        const shadowCorners = corners.map(c => [c[0] + dy, c[1] + dx]);
-        const allPoints = [...corners, ...shadowCorners.reverse()];
-        const centerX = corners.reduce((a, c) => a + c[1], 0) / corners.length;
-        const centerY = corners.reduce((a, c) => a + c[0], 0) / corners.length;
-        const sorted = allPoints.sort((a, b) => Math.atan2(a[0] - centerY, a[1] - centerX) - Math.atan2(b[0] - centerY, b[1] - centerX));
-
-        const shadow = L.polygon(sorted, {
-          color: s.color,
-          fillColor: s.color,
-          fillOpacity: s.opacity,
-          weight: 1,
-          opacity: s.opacity * 0.8,
-          className: 'building-shadow'
-        }).addTo(this.mainMap);
-
-        this.shadowLayers.push(shadow);
-      } else {
-        const dx = s.endLng - s.startLng;
-        const dy = s.endLat - s.startLat;
-
-        const shadow = L.circle([s.startLat + dy * 0.3, s.startLng + dx * 0.3], {
-          radius: s.canopy * 3,
-          color: s.color,
-          fillColor: s.color,
-          fillOpacity: s.opacity,
-          weight: 0.5,
-          opacity: s.opacity * 0.6
-        }).addTo(this.mainMap);
-
-        this.shadowLayers.push(shadow);
-      }
-    }
-  },
-
-  updateShadows() {
-    this._drawShadows();
-  },
-
-  _clearShadows() {
-    for (const l of this.shadowLayers) {
-      this.mainMap.removeLayer(l);
-    }
-    this.shadowLayers = [];
-  },
-
   clearRoutes() {
-    for (const l of this.routeLayers) {
-      this.mainMap.removeLayer(l);
-    }
+    this.routeLayers.forEach(l => this.map.removeLayer(l));
+    this.routeMarkers.forEach(l => this.map.removeLayer(l));
     this.routeLayers = [];
+    this.routeMarkers = [];
   },
 
-  drawRoute(points, color, dash) {
-    const polyline = L.polyline(points, {
-      color: color || '#06B6D4',
-      weight: 4,
-      opacity: 0.7,
-      dashArray: dash || null
-    }).addTo(this.mainMap);
-    this.routeLayers.push(polyline);
-    return polyline;
+  drawRoute(points, color, dash, label) {
+    const poly = L.polyline(points, {
+      color: color || '#06B6D4', weight: 4, opacity: 0.7, dashArray: dash || null
+    }).addTo(this.map);
+    this.routeLayers.push(poly);
+    if (label && points.length > 0) {
+      const mid = points[Math.floor(points.length / 2)];
+      const marker = L.marker(mid, {
+        icon: L.divIcon({
+          className: '', html: `<span style="background:${color};color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">${label}</span>`,
+          iconSize: [0, 0], iconAnchor: [0, 0]
+        })
+      }).addTo(this.map);
+      this.routeLayers.push(marker);
+    }
+    return poly;
   },
 
   drawMockRoutes() {
     this.clearRoutes();
-    const center = this.center;
+    const c = this.center;
 
-    this.drawRoute(
-      [center, [center[0] + 0.003, center[1] + 0.005], [center[0] + 0.006, center[1] + 0.003]],
-      '#6366F1'
-    );
+    const rA = [[c[0], c[1]], [c[0] + 0.003, c[1] + 0.005], [c[0] + 0.006, c[1] + 0.003]];
+    const rB = [[c[0], c[1]], [c[0] + 0.001, c[1] + 0.003], [c[0] + 0.003, c[1] + 0.006], [c[0] + 0.006, c[1] + 0.003]];
+    const rC = [[c[0], c[1]], [c[0] + 0.004, c[1] + 0.002], [c[0] + 0.006, c[1] + 0.003]];
 
-    this.drawRoute(
-      [center, [center[0] + 0.001, center[1] + 0.003], [center[0] + 0.003, center[1] + 0.006], [center[0] + 0.006, center[1] + 0.003]],
-      '#06B6D4'
-    );
-
-    this.drawRoute(
-      [center, [center[0] + 0.004, center[1] + 0.002], [center[0] + 0.006, center[1] + 0.003]],
-      '#10B981', '8, 8'
-    );
+    this.drawRoute(rA, '#6366F1', null, 'Fastest');
+    this.drawRoute(rB, '#06B6D4', null, 'Shaded ✓');
+    this.drawRoute(rC, '#10B981', '8,8', 'Comfort');
   },
 
-  switchLayer(layer) {
-    this.currentLayer = layer;
-    const mapEl = this.mainMap.getContainer();
-    if (layer === 'heat') {
-      mapEl.style.filter = 'hue-rotate(20deg) saturate(1.2)';
-    } else {
-      mapEl.style.filter = '';
-    }
+  addRouteMarker(latlng, type) {
+    const color = type === 'start' ? '#10B981' : '#EF4444';
+    const icon = type === 'start' ? 'circle-dot' : 'location-dot';
+    const marker = L.marker(latlng, {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:${color};border-radius:50%;border:3px solid #0F172A;box-shadow:0 2px 12px rgba(0,0,0,.5)"><i class="fas fa-${icon}" style="color:#fff;font-size:14px"></i></div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      })
+    }).addTo(this.map);
+    this.routeMarkers.push(marker);
+    return marker;
   },
 
-  _setupLayerControls() {
-    document.querySelectorAll('.map-control-btn[data-layer]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.map-control-btn[data-layer]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.switchLayer(btn.dataset.layer);
-      });
-    });
-  },
-
-  flyTo(lat, lng, zoom) {
-    this.mainMap.flyTo([lat, lng], zoom || 16, { duration: 1.5 });
-  },
-
-  addPlanningBuilding(lat, lng, height, width) {
+  // === PLANNING MODE ===
+  addPlanningBuilding(latlng, height, width, isTemp) {
     const latPerM = 0.00000899;
-    const lngPerM = 0.0000113 / Math.cos(SolarCalc.degToRad(lat));
+    const lngPerM = 0.0000113 / Math.cos(SolarCalc.degToRad(latlng.lat || latlng[0]));
+    const lat = latlng.lat || latlng[0];
+    const lng = latlng.lng || latlng[1];
     const w = width * lngPerM;
     const d = (height * 0.4) * latPerM;
-    const bounds = [
-      [lat - d, lng - w],
-      [lat - d, lng + w],
-      [lat + d, lng + w],
-      [lat + d, lng - w]
-    ];
+    const bounds = [[lat - d, lng - w], [lat - d, lng + w], [lat + d, lng + w], [lat + d, lng - w]];
 
-    const building = L.polygon(bounds, {
-      color: '#06B6D4',
-      fillColor: '#0891B2',
-      fillOpacity: 0.6,
-      weight: 2,
-      opacity: 0.8,
-      dashArray: '4, 4'
-    }).addTo(this.planningMap);
+    const opts = isTemp ? {
+      color: '#06B6D4', fillColor: '#0891B2', fillOpacity: 0.5, weight: 2, opacity: 0.8, dashArray: '4,4'
+    } : {
+      color: '#06B6D4', fillColor: '#0891B2', fillOpacity: 0.6, weight: 1, opacity: 0.8
+    };
 
-    const sunPos = SolarCalc.getSunPosition(new Date());
+    const building = L.polygon(bounds, opts).addTo(this.map);
+
+    const sunPos = SolarCalc.getSunPosition(this._getTimeObj());
     const elevRad = SolarCalc.degToRad(sunPos.elevation);
     const tanElev = Math.tan(elevRad);
     const shadowLen = tanElev > 0.01 ? 1 / tanElev : 20;
@@ -268,7 +209,6 @@ const MapRenderer = {
     const dy = Math.cos(shadowAzRad) * height * shadowLen * 0.5;
     const sdx = dx * lngPerM * 0.3;
     const sdy = dy * latPerM * 0.3;
-
     const shadowBounds = bounds.map(c => [c[0] + sdy, c[1] + sdx]);
     const allPts = [...bounds, ...shadowBounds.reverse()];
     const cx = bounds.reduce((a, c) => a + c[1], 0) / bounds.length;
@@ -276,28 +216,21 @@ const MapRenderer = {
     const sorted = allPts.sort((a, b) => Math.atan2(a[0] - cy, a[1] - cx) - Math.atan2(b[0] - cy, b[1] - cx));
 
     const shadow = L.polygon(sorted, {
-      color: '#6366F1',
-      fillColor: '#6366F1',
-      fillOpacity: 0.25,
-      weight: 1,
-      opacity: 0.3
-    }).addTo(this.planningMap);
+      color: '#6366F1', fillColor: '#6366F1', fillOpacity: 0.2, weight: 1, opacity: 0.3
+    }).addTo(this.map);
 
+    this.placedObjects.push({ building, shadow });
     return { building, shadow };
   },
 
-  addPlanningTree(lat, lng, height) {
+  addPlanningTree(latlng, height) {
+    const lat = latlng.lat || latlng[0];
+    const lng = latlng.lng || latlng[1];
     const tree = L.circleMarker([lat, lng], {
-      radius: 8,
-      color: '#065F46',
-      fillColor: '#10B981',
-      fillOpacity: 0.7,
-      weight: 2,
-      opacity: 0.8,
-      dashArray: '3, 3'
-    }).addTo(this.planningMap);
+      radius: 8, color: '#065F46', fillColor: '#10B981', fillOpacity: 0.7, weight: 2, opacity: 0.8, dashArray: '3,3'
+    }).addTo(this.map);
 
-    const sunPos = SolarCalc.getSunPosition(new Date());
+    const sunPos = SolarCalc.getSunPosition(this._getTimeObj());
     const elevRad = SolarCalc.degToRad(sunPos.elevation);
     const tanElev = Math.tan(elevRad);
     const shadowLen = tanElev > 0.01 ? 1 / tanElev : 20;
@@ -309,37 +242,108 @@ const MapRenderer = {
     const dy = Math.cos(shadowAzRad) * height * shadowLen * latPerM * 0.2;
 
     const shadow = L.circle([lat + dy * 0.3, lng + dx * 0.3], {
-      radius: 10,
-      color: '#10B981',
-      fillColor: '#10B981',
-      fillOpacity: 0.2,
-      weight: 1,
-      opacity: 0.3
-    }).addTo(this.planningMap);
+      radius: 10, color: '#10B981', fillColor: '#10B981', fillOpacity: 0.2, weight: 1, opacity: 0.3
+    }).addTo(this.map);
 
+    this.placedObjects.push({ tree, shadow });
     return { tree, shadow };
   },
 
-  _addPlanningData() {
-    for (const b of ShadowCalc.buildings.slice(0, 5)) {
+  clearPlanningObjects() {
+    this.placedObjects.forEach(obj => {
+      Object.values(obj).forEach(l => this.map.removeLayer(l));
+    });
+    this.placedObjects = [];
+  },
+
+  _getTimeObj() {
+    const d = new Date();
+    if (window.App && App.timeValue) {
+      d.setHours(Math.floor(App.timeValue), (App.timeValue % 1) * 60);
+    }
+    return d;
+  },
+
+  updateShadows() {
+    this._clearShadows();
+    this._drawShadows();
+  },
+
+  _drawShadows() {
+    const sunPos = SolarCalc.getSunPosition(this._getTimeObj());
+    const elevation = sunPos.elevation;
+    const azimuth = sunPos.azimuth;
+    if (elevation <= 0) return;
+
+    const azimuthRad = SolarCalc.degToRad(azimuth);
+    const elevRad = SolarCalc.degToRad(elevation);
+    const tanElev = Math.tan(elevRad);
+    const shadowLen = tanElev > 0.01 ? 1 / tanElev : 20;
+    const shadowAz = (azimuth + 180) % 360;
+    const shadowAzRad = SolarCalc.degToRad(shadowAz);
+
+    const buildingData = this._getBuildingData();
+
+    for (const b of buildingData) {
       const latPerM = 0.00000899;
       const lngPerM = 0.0000113 / Math.cos(SolarCalc.degToRad(b.lat));
       const w = b.width * lngPerM;
       const d = b.depth * latPerM;
-      const bounds = [
-        [b.lat - d, b.lng - w],
-        [b.lat - d, b.lng + w],
-        [b.lat + d, b.lng + w],
-        [b.lat + d, b.lng - w]
-      ];
+      const dx = Math.sin(shadowAzRad) * b.height * shadowLen * 0.5;
+      const dy = Math.cos(shadowAzRad) * b.height * shadowLen * 0.5;
+      const sdx = dx * lngPerM;
+      const sdy = dy * latPerM;
 
-      L.polygon(bounds, {
-        color: '#334155',
-        fillColor: '#334155',
-        fillOpacity: 0.7,
-        weight: 1,
-        opacity: 0.5
-      }).addTo(this.planningMap);
+      const corners = [[b.lat - d, b.lng - w], [b.lat - d, b.lng + w], [b.lat + d, b.lng + w], [b.lat + d, b.lng - w]];
+      const shadCorners = corners.map(c => [c[0] + sdy * 0.5, c[1] + sdx * 0.5]);
+      const allPts = [...corners, ...shadCorners.reverse()];
+      const cx = corners.reduce((a, c) => a + c[1], 0) / corners.length;
+      const cy = corners.reduce((a, c) => a + c[0], 0) / corners.length;
+      const sorted = allPts.sort((a, b) => Math.atan2(a[0] - cy, a[1] - cx) - Math.atan2(b[0] - cy, b[1] - cx));
+
+      const opacity = Math.max(0.12, Math.min(0.45, (90 - elevation) / 90 * 0.5));
+      const shadow = L.polygon(sorted, {
+        color: '#6366F1', fillColor: '#6366F1', fillOpacity: opacity, weight: 1, opacity: opacity * 0.7
+      }).addTo(this.map);
+      this.shadowLayers.push(shadow);
     }
+  },
+
+  _getBuildingData() {
+    const center = this.center;
+    return [
+      { lat: center[0] + 0.003, lng: center[1] + 0.002, height: 45, width: 30, depth: 20 },
+      { lat: center[0] + 0,    lng: center[1] + 0.004, height: 60, width: 25, depth: 18 },
+      { lat: center[0] - 0.002,lng: center[1] + 0.001, height: 35, width: 40, depth: 25 },
+      { lat: center[0] + 0.004,lng: center[1] - 0.002, height: 50, width: 20, depth: 15 },
+      { lat: center[0] - 0.001,lng: center[1] - 0.003, height: 70, width: 35, depth: 22 },
+      { lat: center[0] + 0.005,lng: center[1] + 0.005, height: 25, width: 50, depth: 30 },
+      { lat: center[0] - 0.003,lng: center[1] + 0.003, height: 40, width: 28, depth: 20 },
+      { lat: center[0] + 0.002,lng: center[1] - 0.004, height: 55, width: 32, depth: 24 },
+      { lat: center[0] + 0.001,lng: center[1] - 0.001, height: 30, width: 22, depth: 16 },
+      { lat: center[0] - 0.004,lng: center[1] - 0.002, height: 80, width: 45, depth: 28 },
+    ];
+  },
+
+  _clearShadows() {
+    this.shadowLayers.forEach(l => this.map.removeLayer(l));
+    this.shadowLayers = [];
+  },
+
+  switchLayer(layer) {
+    this.currentLayer = layer;
+    const el = this.map.getContainer();
+    if (layer === 'heat') el.style.filter = 'hue-rotate(20deg) saturate(1.2)';
+    else el.style.filter = '';
+  },
+
+  _setupLayerControls() {
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.switchLayer(btn.dataset.layer);
+      });
+    });
   }
 };

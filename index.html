@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShadowMap — AI Urban Shade Navigation</title>
+  <title>ShadowMap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -12,571 +12,362 @@
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="navbar glass" id="navbar">
-    <div class="nav-brand">
-      <div class="nav-logo">
-        <i class="fas fa-map-location-dot"></i>
-        <span>Shadow<span class="accent">Map</span></span>
-      </div>
+  <!-- ==================== SIDEBAR ==================== -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <i class="fas fa-map-location-dot"></i>
     </div>
-    <div class="nav-links" id="navLinks">
-      <a href="#dashboard" class="nav-link active" data-section="dashboard">
-        <i class="fas fa-gauge-high"></i><span>Dashboard</span>
-      </a>
-      <a href="#routes" class="nav-link" data-section="routes">
-        <i class="fas fa-route"></i><span>Routes</span>
-      </a>
-      <a href="#planning" class="nav-link" data-section="planning">
-        <i class="fas fa-city"></i><span>Planning</span>
-      </a>
-      <a href="#science" class="nav-link" data-section="science">
-        <i class="fas fa-flask"></i><span>Science</span>
-      </a>
-    </div>
-    <div class="nav-actions">
-      <button class="btn-icon glass" id="themeToggle" title="Toggle theme">
-        <i class="fas fa-moon"></i>
+    <div class="sidebar-nav" id="sidebarNav">
+      <button class="side-btn active" data-panel="dashboard" title="Dashboard">
+        <i class="fas fa-gauge-high"></i>
       </button>
-      <button class="btn-icon glass" id="menuToggle" title="Menu">
-        <i class="fas fa-bars"></i>
+      <button class="side-btn" data-panel="routes" title="Routes">
+        <i class="fas fa-route"></i>
+      </button>
+      <button class="side-btn" data-panel="planning" title="Urban Planning">
+        <i class="fas fa-city"></i>
+      </button>
+      <button class="side-btn" data-panel="science" title="Science">
+        <i class="fas fa-flask"></i>
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="side-btn" id="locateBtn" title="My Location">
+        <i class="fas fa-location-crosshairs"></i>
+      </button>
+      <button class="side-btn" id="citySearchBtn" title="Search City">
+        <i class="fas fa-search"></i>
       </button>
     </div>
   </nav>
 
-  <!-- Mobile Menu -->
-  <div class="mobile-menu glass" id="mobileMenu">
-    <a href="#dashboard" class="nav-link active" data-section="dashboard">
-      <i class="fas fa-gauge-high"></i><span>Dashboard</span>
-    </a>
-    <a href="#routes" class="nav-link" data-section="routes">
-      <i class="fas fa-route"></i><span>Routes</span>
-    </a>
-    <a href="#planning" class="nav-link" data-section="planning">
-      <i class="fas fa-city"></i><span>Planning</span>
-    </a>
-    <a href="#science" class="nav-link" data-section="science">
-      <i class="fas fa-flask"></i><span>Science</span>
-    </a>
+  <!-- ==================== CITY SEARCH OVERLAY ==================== -->
+  <div class="city-search-overlay glass" id="citySearchOverlay" style="display:none">
+    <div class="city-search-header">
+      <h4>Search City</h4>
+      <button class="btn-icon-small" id="citySearchClose"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="city-search-input">
+      <i class="fas fa-search"></i>
+      <input type="text" id="citySearchInput" placeholder="Type a city name...">
+    </div>
+    <div class="city-suggestions" id="citySuggestions"></div>
   </div>
 
-  <!-- ==================== SECTION: DASHBOARD ==================== -->
-  <section id="dashboard" class="section active">
+  <!-- ==================== MAP (always visible) ==================== -->
+  <main class="main-area" id="mainArea">
+    <div id="map" class="full-map"></div>
 
-    <!-- Hero -->
-    <div class="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-content">
-        <div class="hero-text">
-          <span class="hero-badge glass">
-            <i class="fas fa-sun"></i> Live Now
-          </span>
-          <h1>Navigate the <span class="accent">Cool</span> Path</h1>
-          <p>AI-powered shade navigation for climate-adaptive cities</p>
-          <div class="hero-stats">
-            <div class="stat-chip glass">
-              <i class="fas fa-temperature-high"></i>
-              <span id="heroTemp">31</span><small>°C</small>
-            </div>
-            <div class="stat-chip glass">
-              <i class="fas fa-umbrella"></i>
-              <span id="heroShade">42</span><small>% shade</small>
-            </div>
-            <div class="stat-chip glass">
-              <i class="fas fa-clock"></i>
-              <span id="heroSunset">5h 23m</span>
-            </div>
-          </div>
-        </div>
-        <div class="sun-visual" id="sunVisual">
-          <canvas id="sunCanvas"></canvas>
-          <div class="sun-info glass">
-            <div class="sun-stat"><span class="label">Azimuth</span><span class="value" id="sunAzimuth">142°</span></div>
-            <div class="sun-stat"><span class="label">Elevation</span><span class="value" id="sunElevation">58°</span></div>
-            <div class="sun-stat"><span class="label">Intensity</span><span class="value" id="sunIntensity">873 W/m²</span></div>
-          </div>
-        </div>
+    <!-- Map Floating Controls -->
+    <div class="map-float-top">
+      <div class="map-layer-controls glass">
+        <button class="layer-btn active" data-layer="shade"><i class="fas fa-umbrella"></i> Shade</button>
+        <button class="layer-btn" data-layer="heat"><i class="fas fa-fire"></i> Heat</button>
+        <button class="layer-btn" data-layer="temp"><i class="fas fa-temperature-half"></i> Temp</button>
+      </div>
+      <div class="map-legend glass" id="mapLegend">
+        <div class="legend-item"><span class="dot" style="--c:#6366F1"></span>Building Shadow</div>
+        <div class="legend-item"><span class="dot" style="--c:#10B981"></span>Tree Shadow</div>
+        <div class="legend-item"><span class="dot" style="--c:#F59E0B"></span>Partial</div>
       </div>
     </div>
 
-    <!-- Dashboard Grid -->
-    <div class="dashboard-grid">
-      <!-- City Heat Summary -->
-      <div class="card glass card-heat">
-        <div class="card-header">
-          <h3><i class="fas fa-fire"></i> City Heat Summary</h3>
-          <span class="card-badge" id="heatBadge">Moderate</span>
+    <!-- Map Status Bar -->
+    <div class="map-status glass" id="mapStatus">
+      <span id="mapCity"><i class="fas fa-map-pin"></i> New York City</span>
+      <span id="mapCoords"><i class="fas fa-location-dot"></i> 40.71, -74.01</span>
+      <span id="mapTemp"><i class="fas fa-temperature-high"></i> <span id="mapTempVal">31</span>°C</span>
+      <span id="mapShadePct"><i class="fas fa-umbrella"></i> <span id="mapShadeVal">42</span>% shade</span>
+    </div>
+
+    <!-- Route Mode Indicators -->
+    <div class="route-indicators" id="routeIndicators" style="display:none">
+      <div class="route-indicator route-start glass" id="routeStartIndicator">
+        <i class="fas fa-circle-dot" style="color:#10B981"></i>
+        <span id="routeStartLabel">Click start on map</span>
+        <button class="btn-icon-tiny" id="clearStartBtn"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="route-indicator route-end glass" id="routeEndIndicator">
+        <i class="fas fa-location-dot" style="color:#EF4444"></i>
+        <span id="routeEndLabel">Click destination on map</span>
+        <button class="btn-icon-tiny" id="clearEndBtn"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>
+
+    <!-- Placement Mode Indicator -->
+    <div class="placement-indicator glass" id="placementIndicator" style="display:none">
+      <i class="fas fa-hand-pointer"></i>
+      <span>Click on the map to place <strong id="placementName">building</strong></span>
+      <button class="btn-icon-tiny" id="cancelPlacementBtn"><i class="fas fa-xmark"></i></button>
+    </div>
+
+  </main>
+
+  <!-- ==================== OVERLAY PANEL: DASHBOARD ==================== -->
+  <aside class="overlay-panel glass" id="panel-dashboard">
+    <div class="panel-header">
+      <h3><i class="fas fa-gauge-high"></i> Dashboard</h3>
+      <button class="btn-icon-small close-panel"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="panel-scroll">
+      <!-- City Heat -->
+      <div class="ow-card">
+        <div class="ow-card-header">
+          <span><i class="fas fa-fire"></i> City Heat</span>
+          <span class="badge" id="dashHeatBadge">Moderate</span>
         </div>
-        <div class="heat-grid">
-          <div class="heat-item">
-            <span class="heat-value" id="currentTemp">31<span class="unit">°C</span></span>
-            <span class="heat-label">Current</span>
-          </div>
-          <div class="heat-item">
-            <span class="heat-value" id="feelsLike">35<span class="unit">°C</span></span>
-            <span class="heat-label">Feels Like</span>
-          </div>
-          <div class="heat-item">
-            <span class="heat-value" id="maxTemp">38<span class="unit">°C</span></span>
-            <span class="heat-label">Max Today</span>
-          </div>
-          <div class="heat-item">
-            <span class="heat-value" id="humidityVal">54<span class="unit">%</span></span>
-            <span class="heat-label">Humidity</span>
-          </div>
+        <div class="ow-grid-4">
+          <div><span class="ow-num" id="dashTemp">31<span class="unit">°C</span></span><span class="ow-label">Current</span></div>
+          <div><span class="ow-num" id="dashFeels">35<span class="unit">°C</span></span><span class="ow-label">Feels Like</span></div>
+          <div><span class="ow-num" id="dashMax">38<span class="unit">°C</span></span><span class="ow-label">Max Today</span></div>
+          <div><span class="ow-num" id="dashHumidity">54<span class="unit">%</span></span><span class="ow-label">Humidity</span></div>
         </div>
-        <div class="heat-progress">
-          <div class="heat-progress-bar" id="heatProgressBar" style="width:62%"></div>
-          <div class="heat-progress-labels">
-            <span>Cool</span><span>Comfort</span><span>Warm</span><span>Hot</span><span>Danger</span>
-          </div>
+        <div class="ow-progress">
+          <div class="ow-progress-bar" id="dashHeatBar" style="width:55%"></div>
+          <div class="ow-progress-labels"><span>Cool</span><span>Comfort</span><span>Warm</span><span>Hot</span><span>Danger</span></div>
         </div>
       </div>
 
-      <!-- Shade Coverage -->
-      <div class="card glass card-shade">
-        <div class="card-header">
-          <h3><i class="fas fa-umbrella"></i> Shade Coverage</h3>
-          <span class="card-badge accent" id="shadeBadge">42%</span>
+      <!-- Sun Position -->
+      <div class="ow-card">
+        <div class="ow-card-header">
+          <span><i class="fas fa-sun"></i> Sun Position</span>
+          <span class="badge cyan" id="dashSunPhase">Afternoon</span>
         </div>
-        <div class="shade-donut-container">
-          <canvas id="shadeDonut"></canvas>
+        <div class="ow-sun-info">
+          <div class="sun-stat-row"><span>Azimuth</span><span id="dashAzimuth">142°</span></div>
+          <div class="sun-stat-row"><span>Elevation</span><span id="dashElevation">58°</span></div>
+          <div class="sun-stat-row"><span>Intensity</span><span id="dashIntensity">873 W/m²</span></div>
+          <div class="sun-stat-row"><span>Sunset</span><span id="dashSunset">5h 23m</span></div>
         </div>
-        <div class="shade-stats">
-          <div class="shade-stat"><span class="dot" style="--c:#10B981"></span>Shaded<span id="shadedPct">42</span>%</div>
-          <div class="shade-stat"><span class="dot" style="--c:#F59E0B"></span>Partial<span id="partialPct">28</span>%</div>
-          <div class="shade-stat"><span class="dot" style="--c:#EF4444"></span>Exposed<span id="exposedPct">30</span>%</div>
-        </div>
-      </div>
-
-      <!-- Prediction Accuracy -->
-      <div class="card glass card-prediction">
-        <div class="card-header">
-          <h3><i class="fas fa-brain"></i> Prediction Engine</h3>
-          <span class="card-badge success">Active</span>
-        </div>
-        <div class="prediction-main">
-          <canvas id="predictionGauge"></canvas>
-          <div class="prediction-value">94<span>%</span></div>
-        </div>
-        <div class="prediction-details">
-          <div class="pred-detail"><span>Model</span><span>ShadowNet v2.4</span></div>
-          <div class="pred-detail"><span>Last Run</span><span id="lastPredictionTime">Just now</span></div>
-          <div class="pred-detail"><span>Data Points</span><span>12,847</span></div>
-        </div>
+        <canvas id="dashSunCanvas" height="80"></canvas>
       </div>
 
       <!-- Heat Exposure Index -->
-      <div class="card glass card-hei">
-        <div class="card-header">
-          <h3><i class="fas fa-temperature-high"></i> HEI Index</h3>
-          <span class="card-badge warning">Warm</span>
+      <div class="ow-card">
+        <div class="ow-card-header">
+          <span><i class="fas fa-temperature-high"></i> HEI Index</span>
+          <span class="badge warning" id="dashHeiBadge">Warm</span>
         </div>
-        <div class="hei-display">
-          <canvas id="heiGauge"></canvas>
-          <div class="hei-value" id="heiValue">52</div>
-          <div class="hei-label">Heat Exposure Index</div>
-        </div>
+        <canvas id="dashHeiGauge" height="100"></canvas>
+        <div class="ow-hei-value" id="dashHeiValue">52</div>
       </div>
 
-      <!-- AI Shade Forecast -->
-      <div class="card glass card-forecast">
-        <div class="card-header">
-          <h3><i class="fas fa-chart-line"></i> AI Shade Forecast</h3>
-          <span class="card-badge accent">6h Ahead</span>
+      <!-- Forecast -->
+      <div class="ow-card">
+        <div class="ow-card-header">
+          <span><i class="fas fa-chart-line"></i> 6h Forecast</span>
         </div>
-        <canvas id="forecastChart"></canvas>
+        <canvas id="dashForecast" height="130"></canvas>
       </div>
 
-      <!-- Live Sun Position -->
-      <div class="card glass card-sunpos">
-        <div class="card-header">
-          <h3><i class="fas fa-sun"></i> Sun Path Today</h3>
-          <span class="card-badge" id="sunPhaseBadge">Afternoon</span>
+      <!-- Stats -->
+      <div class="ow-card">
+        <div class="ow-card-header">
+          <span><i class="fas fa-microchip"></i> ShadowNet v2.4</span>
+          <span class="badge green">94% accuracy</span>
         </div>
-        <canvas id="sunPathChart"></canvas>
-      </div>
-
-      <!-- Comfort Score Gauge -->
-      <div class="card glass card-comfort">
-        <div class="card-header">
-          <h3><i class="fas fa-face-smile"></i> Comfort Score</h3>
-          <span class="card-badge success">Good</span>
+        <div class="ow-stats-grid">
+          <div><span class="ow-stat-val" id="dashShadePct">42</span><span class="ow-stat-label">Shade %</span></div>
+          <div><span class="ow-stat-val" id="dashComfort">76</span><span class="ow-stat-label">Comfort</span></div>
+          <div><span class="ow-stat-val" id="dashHeatRisk">52</span><span class="ow-stat-label">HEI</span></div>
+          <div><span class="ow-stat-val" id="dashDataPts">12.8K</span><span class="ow-stat-label">Data Points</span></div>
         </div>
-        <canvas id="comfortGauge"></canvas>
       </div>
     </div>
+  </aside>
 
-    <!-- Time Travel Slider -->
-    <div class="time-travel glass">
-      <div class="time-header">
-        <h3><i class="fas fa-clock-rotate-left"></i> Time Travel Simulation</h3>
-        <div class="time-display">
-          <span id="timeDisplay">14:30</span>
-          <span class="time-date" id="dateDisplay">June 21</span>
-        </div>
-      </div>
-      <div class="time-slider-container">
-        <span class="time-label">06:00</span>
-        <input type="range" id="timeSlider" min="6" max="20" step="0.25" value="14.5">
-        <span class="time-label">20:00</span>
-      </div>
-      <div class="time-note">
-        <i class="fas fa-circle-info"></i>
-        <span>Drag to see shadows shift in real-time</span>
-      </div>
+  <!-- ==================== OVERLAY PANEL: ROUTES ==================== -->
+  <aside class="overlay-panel glass" id="panel-routes">
+    <div class="panel-header">
+      <h3><i class="fas fa-route"></i> Route Planner</h3>
+      <button class="btn-icon-small close-panel"><i class="fas fa-chevron-right"></i></button>
     </div>
-
-  </section>
-
-  <!-- ==================== SECTION: ROUTES ==================== -->
-  <section id="routes" class="section">
-
-    <!-- Map Container -->
-    <div class="map-container">
-      <div id="map"></div>
-
-      <!-- Map Overlay Controls -->
-      <div class="map-controls glass">
-        <button class="map-control-btn active" data-layer="shade">
-          <i class="fas fa-umbrella"></i> Shade
+    <div class="panel-scroll">
+      <div class="ow-card">
+        <p class="ow-hint"><i class="fas fa-info-circle"></i> Toggle route mode, then click on the map</p>
+        <button class="ow-btn primary full" id="startRouteMode">
+          <i class="fas fa-route"></i> Start Route Mode
         </button>
-        <button class="map-control-btn" data-layer="heat">
-          <i class="fas fa-fire"></i> Heat
-        </button>
-        <button class="map-control-btn" data-layer="temp">
-          <i class="fas fa-temperature-half"></i> Temp
-        </button>
-        <div class="map-control-divider"></div>
-        <button class="map-control-btn" id="mapLocateBtn">
-          <i class="fas fa-location-crosshairs"></i>
+        <button class="ow-btn ghost full" id="clearRoutesBtn">
+          <i class="fas fa-eraser"></i> Clear Routes
         </button>
       </div>
 
-      <!-- Map Legend -->
-      <div class="map-legend glass" id="mapLegend">
-        <div class="legend-item"><span class="legend-dot" style="--c:#6366F1"></span>Building Shadow</div>
-        <div class="legend-item"><span class="legend-dot" style="--c:#10B981"></span>Tree Shadow</div>
-        <div class="legend-item"><span class="legend-dot" style="--c:#F59E0B"></span>Partial Shade</div>
+      <!-- Route A -->
+      <div class="ow-card route-ow-card" data-route="A">
+        <div class="ow-card-header">
+          <span class="route-ow-badge indigo">Fastest</span>
+          <span>Route A</span>
+          <span class="ow-stat-val-sm" id="routA_Shade">23%</span>
+        </div>
+        <div class="ow-route-stats">
+          <span>1.2 km</span><span>14 min</span><span class="warning-text">High Heat</span>
+        </div>
+        <div class="ow-bar"><div class="ow-bar-fill indigo" style="width:23%"></div></div>
+        <button class="ow-btn ghost small select-route-btn" data-route="A">Select</button>
       </div>
 
-      <!-- Route Search -->
-      <div class="route-search glass">
-        <div class="search-input-group">
-          <i class="fas fa-circle-dot"></i>
-          <input type="text" id="routeFrom" placeholder="Start location..." value="Central Station">
+      <!-- Route B -->
+      <div class="ow-card route-ow-card active" data-route="B">
+        <div class="ow-card-header">
+          <span class="route-ow-badge cyan">Most Shaded</span>
+          <span>Route B</span>
+          <span class="ow-stat-val-sm cyan-text">81%</span>
         </div>
-        <div class="search-input-group">
-          <i class="fas fa-location-dot"></i>
-          <input type="text" id="routeTo" placeholder="Destination..." value="City Park">
+        <div class="ow-route-stats">
+          <span>1.8 km</span><span>22 min</span><span class="green-text">Low Heat</span>
         </div>
-        <button class="btn-primary" id="findRoutesBtn">
-          <i class="fas fa-magnifying-glass"></i> Find Routes
-        </button>
+        <div class="ow-bar"><div class="ow-bar-fill cyan" style="width:81%"></div></div>
+        <button class="ow-btn primary small select-route-btn" data-route="B">Selected</button>
       </div>
-    </div>
 
-    <!-- Route Comparison -->
-    <div class="route-comparison">
-      <div class="comparison-header">
-        <h3><i class="fas fa-route"></i> Route Comparison</h3>
-        <div class="comparison-filters">
-          <label><input type="checkbox" id="routeAFilter" checked> Fastest</label>
-          <label><input type="checkbox" id="routeBFilter" checked> Shaded</label>
-          <label><input type="checkbox" id="routeCFilter" checked> Comfort</label>
+      <!-- Route C -->
+      <div class="ow-card route-ow-card" data-route="C">
+        <div class="ow-card-header">
+          <span class="route-ow-badge green">Comfort</span>
+          <span>Route C</span>
+          <span class="ow-stat-val-sm green-text">64%</span>
         </div>
-      </div>
-      <div class="comparison-cards">
-        <!-- Route A: Fastest -->
-        <div class="route-card glass" data-route="A">
-          <div class="route-card-header">
-            <span class="route-badge route-fastest">Fastest</span>
-            <h4>Route A</h4>
-            <i class="fas fa-bolt route-icon"></i>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat"><span>Distance</span><span class="val" id="routeADist">1.2 km</span></div>
-            <div class="route-stat"><span>Walking Time</span><span class="val" id="routeATime">14 min</span></div>
-            <div class="route-stat"><span>Shade</span><span class="val accent" id="routeAShade">23%</span></div>
-            <div class="route-stat"><span>Heat Exposure</span><span class="val warning" id="routeAHeat">High</span></div>
-          </div>
-          <div class="route-bar">
-            <div class="route-bar-fill route-bar-shade" style="width:23%"></div>
-          </div>
-          <div class="route-bar-label">Shade Coverage</div>
-          <button class="btn-ghost route-select-btn">Select Route</button>
+        <div class="ow-route-stats">
+          <span>1.5 km</span><span>18 min</span><span class="green-text">Moderate</span>
         </div>
-
-        <!-- Route B: Most Shaded -->
-        <div class="route-card glass active" data-route="B">
-          <div class="route-card-header">
-            <span class="route-badge route-shaded">Most Shaded</span>
-            <h4>Route B</h4>
-            <i class="fas fa-umbrella route-icon"></i>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat"><span>Distance</span><span class="val" id="routeBDist">1.8 km</span></div>
-            <div class="route-stat"><span>Walking Time</span><span class="val" id="routeBTime">22 min</span></div>
-            <div class="route-stat"><span>Shade</span><span class="val accent" id="routeBShade">81%</span></div>
-            <div class="route-stat"><span>Heat Exposure</span><span class="val success" id="routeBHeat">Low</span></div>
-          </div>
-          <div class="route-bar">
-            <div class="route-bar-fill route-bar-shade" style="width:81%"></div>
-          </div>
-          <div class="route-bar-label">Shade Coverage</div>
-          <button class="btn-primary route-select-btn">Select Route</button>
-        </div>
-
-        <!-- Route C: Comfort -->
-        <div class="route-card glass" data-route="C">
-          <div class="route-card-header">
-            <span class="route-badge route-comfort">Comfort</span>
-            <h4>Route C</h4>
-            <i class="fas fa-leaf route-icon"></i>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat"><span>Distance</span><span class="val" id="routeCDist">1.5 km</span></div>
-            <div class="route-stat"><span>Walking Time</span><span class="val" id="routeCTime">18 min</span></div>
-            <div class="route-stat"><span>Shade</span><span class="val accent" id="routeCShade">64%</span></div>
-            <div class="route-stat"><span>Heat Exposure</span><span class="val success" id="routeCHeat">Moderate</span></div>
-          </div>
-          <div class="route-bar">
-            <div class="route-bar-fill route-bar-shade" style="width:64%"></div>
-          </div>
-          <div class="route-bar-label">Shade Coverage</div>
-          <button class="btn-ghost route-select-btn">Select Route</button>
-        </div>
+        <div class="ow-bar"><div class="ow-bar-fill green" style="width:64%"></div></div>
+        <button class="ow-btn ghost small select-route-btn" data-route="C">Select</button>
       </div>
     </div>
+  </aside>
 
-  </section>
-
-  <!-- ==================== SECTION: URBAN PLANNING ==================== -->
-  <section id="planning" class="section">
-
-    <div class="planning-header">
-      <div class="planning-title">
-        <h2><i class="fas fa-city"></i> Urban Planning Mode</h2>
-        <p>Digital twin simulation — add structures and see shade impact</p>
+  <!-- ==================== OVERLAY PANEL: PLANNING ==================== -->
+  <aside class="overlay-panel glass" id="panel-planning">
+    <div class="panel-header">
+      <h3><i class="fas fa-city"></i> Urban Planning</h3>
+      <button class="btn-icon-small close-panel"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="panel-scroll">
+      <div class="ow-card">
+        <p class="ow-hint"><i class="fas fa-hand-pointer"></i> Pick a tool, then click the map</p>
+        <div class="ow-tool-grid">
+          <button class="ow-tool" data-ptool="building"><i class="fas fa-building"></i> Building</button>
+          <button class="ow-tool" data-ptool="tree"><i class="fas fa-tree"></i> Tree</button>
+          <button class="ow-tool" data-ptool="greenroof"><i class="fas fa-leaf"></i> Green Roof</button>
+          <button class="ow-tool" data-ptool="shade"><i class="fas fa-archway"></i> Shade Struct</button>
+        </div>
       </div>
-      <div class="planning-actions">
-        <button class="btn-icon glass" id="resetPlanningBtn" title="Reset">
-          <i class="fas fa-rotate"></i>
-        </button>
+
+      <div class="ow-card" id="planProps">
+        <div class="ow-card-header"><span><i class="fas fa-sliders"></i> Properties</span></div>
+        <div class="ow-prop">
+          <label>Height (m)</label>
+          <div class="ow-prop-row">
+            <input type="range" id="planHeight" min="3" max="120" value="30">
+            <span id="planHeightVal">30m</span>
+          </div>
+        </div>
+        <div class="ow-prop">
+          <label>Width (m)</label>
+          <div class="ow-prop-row">
+            <input type="range" id="planWidth" min="5" max="80" value="20">
+            <span id="planWidthVal">20m</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ow-card">
+        <div class="ow-card-header"><span><i class="fas fa-arrow-right-arrow-left"></i> Impact</span></div>
+        <div class="ow-compare">
+          <div class="ow-compare-col">
+            <h5>Before</h5>
+            <div><span>Shade</span><span id="planBeforeShade">42%</span></div>
+            <div><span>Temp</span><span id="planBeforeTemp">31°C</span></div>
+            <div><span>HEI</span><span id="planBeforeHEI">52</span></div>
+          </div>
+          <div class="ow-compare-arrow"><i class="fas fa-arrow-right"></i></div>
+          <div class="ow-compare-col after">
+            <h5>After</h5>
+            <div><span>Shade</span><span id="planAfterShade" class="cyan-text">—</span></div>
+            <div><span>Temp</span><span id="planAfterTemp" class="green-text">—</span></div>
+            <div><span>HEI</span><span id="planAfterHEI" class="green-text">—</span></div>
+          </div>
+        </div>
+        <div class="ow-impact" id="planImpact" style="display:none">
+          <i class="fas fa-arrow-trend-down"></i> Shade +<strong id="planImprove">0</strong>%
+        </div>
+        <button class="ow-btn ghost small full" id="planResetBtn"><i class="fas fa-rotate"></i> Reset</button>
       </div>
     </div>
+  </aside>
 
-    <div class="planning-grid">
-      <!-- Planning Tools -->
-      <div class="planning-tools glass">
-        <div class="tools-header">
-          <h3>Add Structures</h3>
-        </div>
-        <div class="tool-buttons">
-          <button class="tool-btn glass" data-tool="building">
-            <i class="fas fa-building"></i> Building
-          </button>
-          <button class="tool-btn glass" data-tool="tree">
-            <i class="fas fa-tree"></i> Tree
-          </button>
-          <button class="tool-btn glass" data-tool="greenroof">
-            <i class="fas fa-leaf"></i> Green Roof
-          </button>
-          <button class="tool-btn glass" data-tool="shade">
-            <i class="fas fa-archway"></i> Shade Struct.
-          </button>
-        </div>
-
-        <div class="tools-divider"></div>
-
-        <div class="tool-properties" id="toolProperties">
-          <div class="prop-group">
-            <label>Height (m)</label>
-            <input type="range" id="propHeight" min="3" max="120" value="30">
-            <span class="prop-value" id="propHeightVal">30m</span>
-          </div>
-          <div class="prop-group">
-            <label>Width (m)</label>
-            <input type="range" id="propWidth" min="5" max="80" value="20">
-            <span class="prop-value" id="propWidthVal">20m</span>
-          </div>
-        </div>
-
-        <button class="btn-primary" id="applyToolBtn" style="width:100%">
-          <i class="fas fa-check"></i> Place on Map
-        </button>
-      </div>
-
-      <!-- Before/After Comparison -->
-      <div class="planning-results glass">
-        <div class="planning-map-small" id="planningMap">
-          <div id="planningMiniMap"></div>
-        </div>
-
-        <div class="planning-comparison">
-          <div class="comparison-col">
-            <h4>Before</h4>
-            <div class="c-stat"><span>Shade</span><span id="beforeShade">42%</span></div>
-            <div class="c-stat"><span>Avg Temp</span><span id="beforeTemp">31°C</span></div>
-            <div class="c-stat"><span>HEI</span><span id="beforeHEI">52</span></div>
-          </div>
-          <div class="comparison-arrow">
-            <i class="fas fa-arrow-right"></i>
-          </div>
-          <div class="comparison-col after">
-            <h4>After</h4>
-            <div class="c-stat"><span>Shade</span><span id="afterShade" class="accent">52%</span></div>
-            <div class="c-stat"><span>Avg Temp</span><span id="afterTemp" class="success">28°C</span></div>
-            <div class="c-stat"><span>HEI</span><span id="afterHEI" class="success">41</span></div>
-          </div>
-        </div>
-
-        <div class="impact-badge">
-          <i class="fas fa-arrow-trend-down success"></i>
-          <span>Shade increased by <strong id="shadeImprovement">10%</strong></span>
-        </div>
-      </div>
+  <!-- ==================== OVERLAY PANEL: SCIENCE ==================== -->
+  <aside class="overlay-panel glass wide" id="panel-science">
+    <div class="panel-header">
+      <h3><i class="fas fa-flask"></i> The Science</h3>
+      <button class="btn-icon-small close-panel"><i class="fas fa-chevron-right"></i></button>
     </div>
-  </section>
-
-  <!-- ==================== SECTION: SCIENCE FAIR ==================== -->
-  <section id="science" class="section">
-
-    <div class="science-hero">
-      <h2><i class="fas fa-flask"></i> The Science Behind ShadowMap</h2>
-      <p>How solar geometry, urban heat islands, and smart technology converge</p>
-    </div>
-
-    <div class="science-grid">
-      <!-- Problem -->
-      <div class="science-card glass">
-        <div class="science-icon"><i class="fas fa-triangle-exclamation"></i></div>
-        <h3>The Problem</h3>
-        <p>Cities are overheating. Urban Heat Islands (UHI) can make cities 3-10°C hotter than surrounding areas. Pavement, buildings, and lack of vegetation trap heat — putting pedestrians at risk.</p>
-        <div class="science-stat">
-          <span class="big-number">3–10<span class="small">°C</span></span>
-          <span class="big-label">Urban heat island intensity</span>
-        </div>
-      </div>
-
-      <!-- Solar Geometry -->
-      <div class="science-card glass">
-        <div class="science-icon"><i class="fas fa-sun"></i></div>
-        <h3>Solar Geometry</h3>
-        <p>ShadowMap calculates the sun's position using solar declination, hour angle, and local latitude. Shadow length = building height / tan(solar elevation).</p>
-        <div class="science-diagram">
-          <canvas id="solarDiagram"></canvas>
-        </div>
-        <div class="science-formula">
-          <code>sin(α) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(ω)</code>
-        </div>
-      </div>
-
-      <!-- Solution -->
-      <div class="science-card glass">
-        <div class="science-icon"><i class="fas fa-map-location-dot"></i></div>
-        <h3>The Solution</h3>
-        <p>Real-time shade prediction using building footprints, tree canopies, and solar calculations. Our AI processes 12,000+ city data points to recommend the coolest routes.</p>
-        <div class="science-features">
-          <div class="s-feature"><i class="fas fa-check-circle success"></i> <span>AI shade forecast</span></div>
-          <div class="s-feature"><i class="fas fa-check-circle success"></i> <span>6-hour predictions</span></div>
-          <div class="s-feature"><i class="fas fa-check-circle success"></i> <span>Route optimization</span></div>
-          <div class="s-feature"><i class="fas fa-check-circle success"></i> <span>Urban planning tools</span></div>
-        </div>
-      </div>
-
-      <!-- Impact -->
-      <div class="science-card glass wide">
-        <div class="science-icon"><i class="fas fa-earth-americas"></i></div>
-        <h3>Potential Impact</h3>
-        <div class="impact-grid">
-          <div class="impact-item">
-            <i class="fas fa-heart-circle-check"></i>
-            <span class="impact-num">-40%</span>
-            <span>Heat stress risk</span>
+    <div class="panel-scroll">
+      <div class="ow-card">
+        <div class="ow-science-grid">
+          <div class="ow-sci-item">
+            <i class="fas fa-triangle-exclamation" style="color:#EF4444"></i>
+            <h4>Problem</h4>
+            <p>Urban Heat Islands make cities 3–10°C hotter. Pavement and buildings trap heat, endangering pedestrians.</p>
+            <span class="ow-big-num">3–10°C <small>UHI intensity</small></span>
           </div>
-          <div class="impact-item">
-            <i class="fas fa-person-walking"></i>
-            <span class="impact-num">+60%</span>
-            <span>Walkability score</span>
+          <div class="ow-sci-item">
+            <i class="fas fa-sun" style="color:#F59E0B"></i>
+            <h4>Solar Geometry</h4>
+            <canvas id="sciSolarCanvas" height="90"></canvas>
+            <code>sin(α) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(ω)</code>
           </div>
-          <div class="impact-item">
-            <i class="fas fa-hospital"></i>
-            <span class="impact-num">-25%</span>
-            <span>Heat-related illness</span>
+          <div class="ow-sci-item">
+            <i class="fas fa-map-location-dot" style="color:#06B6D4"></i>
+            <h4>Solution</h4>
+            <p>Real-time shade prediction using building footprints, tree canopies, and solar calculations.</p>
+            <div class="ow-chk-list">
+              <span><i class="fas fa-check-circle green-text"></i> AI forecast</span>
+              <span><i class="fas fa-check-circle green-text"></i> 6h predictions</span>
+              <span><i class="fas fa-check-circle green-text"></i> Route optimization</span>
+            </div>
           </div>
-          <div class="impact-item">
-            <i class="fas fa-leaf"></i>
-            <span class="impact-num">+35%</span>
-            <span>Urban green space</span>
-          </div>
-          <div class="impact-item">
-            <i class="fas fa-building"></i>
-            <span class="impact-num">15%</span>
-            <span>Energy savings</span>
-          </div>
-          <div class="impact-item">
-            <i class="fas fa-tree-city"></i>
-            <span class="impact-num">100+</span>
-            <span>Climate-adaptive cities</span>
+          <div class="ow-sci-item wide">
+            <i class="fas fa-earth-americas" style="color:#10B981"></i>
+            <h4>Impact</h4>
+            <div class="ow-impact-grid">
+              <div><span class="ow-impact-num">-40%</span><span>Heat stress</span></div>
+              <div><span class="ow-impact-num">+60%</span><span>Walkability</span></div>
+              <div><span class="ow-impact-num">-25%</span><span>Illness</span></div>
+              <div><span class="ow-impact-num">+35%</span><span>Green space</span></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </aside>
 
-    <!-- AI Features Showcase -->
-    <div class="ai-showcase glass">
-      <h3><i class="fas fa-robot"></i> AI-Powered Features</h3>
-      <div class="ai-features-grid">
-        <div class="ai-feature-card">
-          <i class="fas fa-cloud-sun"></i>
-          <h4>AI Shade Forecast</h4>
-          <p>Predict shade availability 6 hours ahead with 92% accuracy</p>
-        </div>
-        <div class="ai-feature-card">
-          <i class="fas fa-school"></i>
-          <h4>School Safe Route</h4>
-          <p>Coolest paths for students during peak hours</p>
-        </div>
-        <div class="ai-feature-card">
-          <i class="fas fa-heart"></i>
-          <h4>Elderly Comfort Mode</h4>
-          <p>Prioritize maximum shade and rest areas</p>
-        </div>
-        <div class="ai-feature-card">
-          <i class="fas fa-calendar"></i>
-          <h4>Event Planner</h4>
-          <p>Find shaded locations for outdoor events</p>
-        </div>
-        <div class="ai-feature-card">
-          <i class="fas fa-seedling"></i>
-          <h4>Tree Planting Sim</h4>
-          <p>Optimal locations for new trees to maximize shade</p>
-        </div>
+  <!-- ==================== TIME SLIDER (always visible) ==================== -->
+  <div class="bottom-bar glass" id="bottomBar">
+    <div class="bottom-bar-inner">
+      <div class="bottom-left">
+        <i class="fas fa-clock-rotate-left"></i>
+        <span class="bottom-time" id="bottomTime">14:30</span>
+        <span class="bottom-date" id="bottomDate">Jun 21</span>
+      </div>
+      <div class="bottom-slider">
+        <span class="slider-label">06:00</span>
+        <input type="range" id="mainTimeSlider" min="6" max="20" step="0.1" value="14.5">
+        <span class="slider-label">20:00</span>
+      </div>
+      <div class="bottom-right">
+        <span class="bottom-badge" id="bottomLiveBadge"><i class="fas fa-circle" style="color:#10B981;font-size:8px"></i> LIVE</span>
+        <button class="btn-icon-tiny" id="resetTimeBtn" title="Reset to live time"><i class="fas fa-rotate-left"></i></button>
       </div>
     </div>
+  </div>
 
-  </section>
+  <!-- ==================== TOAST ==================== -->
+  <div class="toast-container" id="toastContainer"></div>
 
-  <!-- ==================== FOOTER ==================== -->
-  <footer class="glass">
-    <div class="footer-content">
-      <div class="footer-brand">
-        <i class="fas fa-map-location-dot"></i> ShadowMap
-      </div>
-      <div class="footer-links">
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">API</a>
-        <a href="#">Docs</a>
-      </div>
-      <div class="footer-copy">
-        &copy; 2026 ShadowMap — AI Urban Shade Navigation
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
+  <!-- ==================== SCRIPTS ==================== -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="js/solar-calc.js"></script>
