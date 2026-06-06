@@ -1,0 +1,226 @@
+/* ============================================================
+   Theme: Caldera — Warm concrete, orange accent, 40px radii
+   ============================================================ */
+
+body.theme-caldera {
+  /* ---- Surface Colors ---- */
+  --surface-canvas: #e2e2df;
+  --surface-sidebar: #f7f6f2;
+  --surface-card: #f7f6f2;
+  --surface-card-hover: #f0efe9;
+  --surface-primary: #fc5000;
+  --text-on-primary: #070607;
+  --surface-logo: transparent;
+  --surface-map-controls: #f7f6f2;
+  --surface-time-bar: #f7f6f2;
+  --surface-stat: #e2e2df;
+  --surface-chart: #e2e2df;
+  --surface-impact: rgba(16,185,129,0.1);
+
+  /* ---- Text Colors ---- */
+  --text-primary: #070607;
+  --text-secondary: #070607;
+  --text-muted: #666666;
+  --accent: #fc5000;
+  --accent-muted: rgba(252,80,0,0.25);
+
+  /* ---- Borders ---- */
+  --border-subtle: rgba(7,6,7,0.2);
+
+  /* ---- Navigation ---- */
+  --nav-hover: rgba(7,6,7,0.06);
+  --nav-active: rgba(252,80,0,0.12);
+  --sidebar-blur: none;
+
+  /* ---- Typography ---- */
+  --font-body: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Oswald', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ---- Heading ---- */
+  --heading-size: 1.75rem;
+  --heading-tracking: 0.02em;
+  --heading-color: #070607;
+  --heading-gradient: none;
+  --heading-clip: unset;
+  --heading-fill: unset;
+
+  /* ---- Border Radii ---- */
+  --radius-cards: 40px;
+  --radius-buttons: 40px;
+  --radius-inputs: 100px;
+  --radius-btn: 40px;
+  --radius-nav-item: 40px;
+  --radius-logo: 40px;
+  --radius-stat: 40px;
+  --radius-canvas: 40px;
+  --radius-legend: 40px;
+  --radius-mobile-toggle: 40px;
+
+  /* ---- Shadows ---- */
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-primary-hover: none;
+
+  /* ---- Card ---- */
+  --card-border: 1px solid rgba(7,6,7,0.2);
+  --card-border-hover: #fc5000;
+  --card-padding: 24px;
+
+  /* ---- Badges ---- */
+  --badge-bg: #f5f28e;
+  --badge-color: #070607;
+  --badge-live-bg: rgba(7,6,7,0.1);
+  --badge-live-color: #070607;
+
+  /* ---- Status ---- */
+  --status-live: #070607;
+
+  /* ---- Semantic ---- */
+  --emerald: #10B981;
+  --amber: #fc5000;
+  --red: #EF4444;
+  --indigo: #fc5000;
+  --cyan: #fc5000;
+
+  /* ---- Map Controls ---- */
+  --map-btn-group-padding: 4px;
+  --map-btn-group-radius: 40px;
+  --map-btn-radius: 40px;
+
+  /* ---- Sidebar ---- */
+  --sidebar-width: 240px;
+
+  /* ---- Transitions ---- */
+  --transition: 0.3s ease;
+}
+
+/* Caldera-specific component overrides */
+
+body.theme-caldera .sidebar {
+  backdrop-filter: none;
+}
+
+body.theme-caldera .nav-item.active::before {
+  background: #fc5000;
+}
+
+body.theme-caldera .page-header h1 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 1.8rem;
+}
+
+body.theme-caldera .card {
+  box-shadow: none;
+}
+
+body.theme-caldera .badge {
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+body.theme-caldera .route-action-btn.primary {
+  border-radius: 40px;
+}
+
+body.theme-caldera .route-select.primary {
+  border-radius: 40px;
+}
+
+body.theme-caldera .plan-tool {
+  border-radius: 40px;
+}
+
+body.theme-caldera .map-btn-group {
+  border-radius: 40px;
+  backdrop-filter: none;
+}
+
+body.theme-caldera .map-btn {
+  border-radius: 40px;
+}
+
+body.theme-caldera .map-legend {
+  border-radius: 40px;
+  backdrop-filter: none;
+}
+
+body.theme-caldera .map-action-btn {
+  border-radius: 40px;
+}
+
+body.theme-caldera .city-overlay-content {
+  backdrop-filter: none;
+}
+
+body.theme-caldera .city-search-box {
+  border-radius: 100px;
+}
+
+body.theme-caldera .city-suggestion {
+  border-radius: 40px;
+}
+
+body.theme-caldera .mobile-toggle {
+  border-radius: 40px;
+  backdrop-filter: none;
+}
+
+body.theme-caldera .mode-btn {
+  border-radius: 40px;
+}
+
+body.theme-caldera .theme-btn {
+  border-radius: 40px;
+}
+
+body.theme-caldera .hub-close-btn {
+  border-radius: 40px;
+}
+
+body.theme-caldera .slider-arrow {
+  border-radius: 40px;
+}
+
+body.theme-caldera .slider-controls {
+  border-radius: 40px;
+}
+
+body.theme-caldera .ai-feat {
+  border-radius: 40px;
+}
+
+body.theme-caldera .dash-heat-grid > div {
+  border-radius: 40px;
+}
+
+body.theme-caldera .dash-stats-grid > div {
+  border-radius: 40px;
+}
+
+body.theme-caldera .sci-impact-grid > div {
+  border-radius: 40px;
+}
+
+body.theme-caldera .route-progress {
+  border-radius: 20px;
+}
+
+body.theme-caldera .dash-progress {
+  border-radius: 20px;
+}
+
+body.theme-caldera .plan-impact {
+  border-radius: 40px;
+}
+
+body.theme-caldera .toast {
+  border-radius: 40px;
+}
+
+body.theme-caldera .hub-card {
+  border-radius: 40px;
+}

@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ShadowMap — AI Urban Shade Navigation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@500&family=Oswald:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme-apple.css">
+  <link rel="stylesheet" href="css/theme-caldera.css">
 </head>
-<body>
+<body class="theme-apple">
 
   <!-- Sidebar Navigation -->
   <nav class="sidebar" id="sidebar">
@@ -50,6 +52,10 @@
           <button class="mode-btn" data-mode="slider" title="Slider"><i class="fas fa-arrows-left-right"></i></button>
           <button class="mode-btn" data-mode="hub" title="Hub"><i class="fas fa-border-all"></i></button>
         </div>
+      </div>
+      <div class="theme-toggle-group" id="themeSwitcher">
+        <button class="theme-btn active" data-theme="apple" title="Apple"><i class="fas fa-apple-whole"></i> Apple</button>
+        <button class="theme-btn" data-theme="caldera" title="Caldera"><i class="fas fa-mountain"></i> Caldera</button>
       </div>
       <div class="sidebar-status">
         <span class="status-dot"></span>

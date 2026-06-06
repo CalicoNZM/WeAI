@@ -23,6 +23,7 @@ const App = {
   init() {
     SolarCalc.init(40.7128, -74.006);
     ShadowCalc.init();
+    this._setupTheme();
     this._setupNavigation();
     this._setupNavModes();
     this._setupMobileMenu();
@@ -101,7 +102,8 @@ const App = {
     this.state.navMode = mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.mode-btn[data-mode="${mode}"]`)?.classList.add('active');
-    document.body.className = 'mode-' + mode;
+    const theme = document.body.className.match(/theme-\w+/)?.[0] || 'theme-apple';
+    document.body.className = 'mode-' + mode + ' ' + theme;
 
     if (mode === 'scroll') {
       this._showSectionInScroll();
@@ -594,6 +596,33 @@ const App = {
     document.getElementById('mapSunElev').textContent = pos.elevation;
 
     Charts.updateHei(hei);
+  },
+
+  // =========== THEME SWITCHING ===========
+  _setupTheme() {
+    const saved = localStorage.getItem('shadowmap-theme') || 'apple';
+    this._setTheme(saved);
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._setTheme(btn.dataset.theme);
+      });
+    });
+  },
+
+  _setTheme(name) {
+    const mode = document.body.className.match(/mode-\w+/)?.[0] || 'mode-scroll';
+    document.body.className = mode + ' theme-' + name;
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.theme-btn[data-theme="${name}"]`)?.classList.add('active');
+    localStorage.setItem('shadowmap-theme', name);
+
+    setTimeout(() => {
+      Charts.init();
+      this._updateDashboard();
+    }, 100);
+
+    this.toast(`Theme: ${name.charAt(0).toUpperCase() + name.slice(1)}`);
   },
 
   // =========== TOAST ===========
